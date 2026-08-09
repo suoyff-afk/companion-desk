@@ -1,0 +1,85 @@
+{
+  "assets": [
+    {
+      "path": "src/assets/kunkun-spritesheet.webp",
+      "purpose": "collapsed companion animation frames",
+      "source": "user-generated artwork",
+      "copyrightHolder": "Companion Desk creator",
+      "license": "Creator-authorized public distribution with Companion Desk",
+      "evidence": "The user confirmed on 2026-08-09 that the character artwork is their original work and authorized its public distribution with this project.",
+      "redistributable": true
+    },
+    {
+      "path": "src/assets/kunkun-wave.png",
+      "purpose": "companion wave pose",
+      "source": "user-generated artwork",
+      "copyrightHolder": "Companion Desk creator",
+      "license": "Creator-authorized public distribution with Companion Desk",
+      "evidence": "The user confirmed on 2026-08-09 that the character artwork is their original work and authorized its public distribution with this project.",
+      "redistributable": true
+    },
+    {
+      "path": "src-tauri/icons/32x32.png",
+      "purpose": "Windows application icon",
+      "source": "Quota Float foundation imported from https://github.com/change-42-yhmm/quota-float",
+      "copyrightHolder": "Quota Float contributors",
+      "license": "MIT",
+      "evidence": "Imported in repository commit 60ac904 with the complete upstream MIT notice preserved at licenses/quota-float-MIT.txt.",
+      "redistributable": true
+    },
+    {
+      "path": "src-tauri/icons/128x128.png",
+      "purpose": "Windows application icon",
+      "source": "Quota Float foundation imported from https://github.com/change-42-yhmm/quota-float",
+      "copyrightHolder": "Quota Float contributors",
+      "license": "MIT",
+      "evidence": "Imported in repository commit 60ac904 with the complete upstream MIT notice preserved at licenses/quota-float-MIT.txt.",
+      "redistributable": true
+    },
+    {
+      "path": "src-tauri/icons/128x128@2x.png",
+      "purpose": "high-density Windows application icon",
+      "source": "Quota Float foundation imported from https://github.com/change-42-yhmm/quota-float",
+      "copyrightHolder": "Quota Float contributors",
+      "license": "MIT",
+      "evidence": "Imported in repository commit 60ac904 with the complete upstream MIT notice preserved at licenses/quota-float-MIT.txt.",
+      "redistributable": true
+    },
+    {
+      "path": "src-tauri/icons/icon.icns",
+      "purpose": "bundle icon required by the Tauri configuration",
+      "source": "Quota Float foundation imported from https://github.com/change-42-yhmm/quota-float",
+      "copyrightHolder": "Quota Float contributors",
+      "license": "MIT",
+      "evidence": "Imported in repository commit 60ac904 with the complete upstream MIT notice preserved at licenses/quota-float-MIT.txt.",
+      "redistributable": true
+    },
+    {
+      "path": "src-tauri/icons/icon.ico",
+      "purpose": "Windows executable and installer icon",
+      "source": "Quota Float foundation imported from https://github.com/change-42-yhmm/quota-float",
+      "copyrightHolder": "Quota Float contributors",
+      "license": "MIT",
+      "evidence": "Imported in repository commit 60ac904 with the complete upstream MIT notice preserved at licenses/quota-float-MIT.txt.",
+      "redistributable": true
+    },
+    {
+      "path": "docs/images/companion-home.png",
+      "purpose": "README public-beta home screenshot",
+      "source": "Companion Desk native QA capture",
+      "copyrightHolder": "Companion Desk contributors",
+      "license": "MIT project documentation; embedded character artwork separately creator-authorized",
+      "evidence": "Captured from the v0.5.0-beta candidate on 2026-08-09; contains the authorized Kunkun artwork and no personal account, host, or path data.",
+      "redistributable": true
+    },
+    {
+      "path": "docs/images/token-view.png",
+      "purpose": "README public-beta Token view screenshot",
+      "source": "Companion Desk native QA capture",
+      "copyrightHolder": "Companion Desk contributors",
+      "license": "MIT project documentation; embedded character artwork separately creator-authorized",
+      "evidence": "Captured from the v0.5.0-beta candidate on 2026-08-09 with neutral local activity and no personal account, host, or path data.",
+      "redistributable": true
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest an improvement for Companion Desk.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What would this help you do?
+      placeholder: "Describe the workflow or problem."
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Suggested solution
+      placeholder: "Describe the behavior you would like."
+  - type: markdown
+    attributes:
+      value: "Companion Desk is local-first. Friend networking and chat are outside the v0.5.0-beta scope."
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Windows
+        - Not platform-specific

@@ -1,0 +1,48 @@
+{
+  "name": "kunkun-desk",
+  "private": true,
+  "version": "0.5.0",
+  "description": "A local-first Windows desktop companion for Codex quota, focus, games, and OpenSSH.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "test": "vitest run --exclude tests/firebase/**",
+    "test:firebase": "vitest run tests/firebase/database.rules.test.ts",
+    "release:assets:check": "node scripts/validate-release-assets.mjs --schema-only",
+    "release:assets:gate": "node scripts/validate-release-assets.mjs --require-redistributable",
+    "release:history:gate": "node scripts/release-history-gate.mjs",
+    "release:tree:check": "node scripts/release-history-gate.mjs --tree-only --ref HEAD",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
+    "@tauri-apps/api": "^2.8.0",
+    "@tauri-apps/plugin-store": "^2.4.3",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "firebase": "^12.16.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "recharts": "^3.9.2"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
+    "@tauri-apps/cli": "^2.8.4",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^5.0.2",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "vitest": "^3.2.4",
+    "yaml": "^2.9.0"
+  },
+  "overrides": {
+    "postcss": {
+      "nanoid": "https://codeload.github.com/ai/nanoid/tar.gz/73d67168136b36fd3b644159b0cff149da4905d9"
+    }
+  }
+}

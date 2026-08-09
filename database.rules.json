@@ -1,0 +1,77 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "profiles": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['displayName', 'createdAt'])",
+        "displayName": {
+          ".validate": "newData.isString()"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "friendCodes": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && $code.matches(/^\\d{8}$/) && (( !data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && !newData.exists()))",
+        ".validate": "newData.val() === auth.uid"
+      }
+    },
+    "requests": {
+      "$recipientUid": {
+        ".read": "auth != null && auth.uid === $recipientUid",
+        "$requesterUid": {
+          ".write": "auth != null && ((auth.uid === $requesterUid && $requesterUid !== $recipientUid && !data.exists() && newData.exists()) || (auth.uid === $requesterUid && !newData.exists()) || (auth.uid === $recipientUid && data.exists() && !newData.exists()))",
+          ".validate": "newData.hasChildren(['createdAt'])",
+          "createdAt": {
+            ".validate": "newData.isNumber() && newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "friends": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$friendUid": {
+          ".write": "auth != null && (( !data.exists() && newData.exists() && ((auth.uid === $uid && root.child('requests/' + $uid + '/' + $friendUid).exists()) || (auth.uid === $friendUid && root.child('requests/' + $friendUid + '/' + $uid).exists())) && newData.parent().parent().child($friendUid + '/' + $uid).hasChild('acceptedAt') && newData.child('acceptedAt').val() === newData.parent().parent().child($friendUid + '/' + $uid + '/acceptedAt').val()) || (data.exists() && !newData.exists() && (auth.uid === $uid || auth.uid === $friendUid) && !newData.parent().parent().child($friendUid + '/' + $uid).exists()))",
+          ".validate": "newData.hasChildren(['acceptedAt'])",
+          "acceptedAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "pokes": {
+      "$recipientUid": {
+        ".read": "auth != null && auth.uid === $recipientUid",
+        "$senderUid": {
+          ".write": "auth != null && ((auth.uid === $senderUid && newData.exists() && newData.parent().parent().parent().child('friends/' + $recipientUid + '/' + $senderUid).exists() && newData.parent().parent().parent().child('friends/' + $senderUid + '/' + $recipientUid).exists() && (!data.exists() || now - data.child('createdAt').val() >= 30000)) || (auth.uid === $recipientUid && data.exists() && !newData.exists() && now - data.child('createdAt').val() >= 86400000))",
+          ".validate": "newData.hasChildren(['eventId', 'createdAt'])",
+          "eventId": {
+            ".validate": "newData.isString()"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber() && newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    }
+  }
+}
