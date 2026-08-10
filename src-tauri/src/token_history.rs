@@ -530,7 +530,12 @@ mod tests {
     #[test]
     fn combines_active_and_archive_with_local_dates_deltas_and_source_totals() {
         let today = NaiveDate::from_ymd_opt(2026, 7, 15).unwrap();
-        let timestamp = "2026-07-14T22:30:00Z";
+        let timestamp = "2026-07-15T12:00:00Z";
+        assert_eq!(
+            DateTime::parse_from_rfc3339(timestamp).unwrap().date_naive(),
+            today,
+            "the integration fixture must not cross a UTC calendar boundary",
+        );
         let fixture = TestDirectory::new();
         let active = fixture.0.join("sessions");
         let archive = fixture.0.join("archived_sessions");
