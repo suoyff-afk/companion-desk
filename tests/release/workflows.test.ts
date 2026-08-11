@@ -268,6 +268,12 @@ describe("Windows beta release dependency gate", () => {
     expect(prepare.run).toMatch(/bundle\/msi/);
     expect(prepare.run).toMatch(/\$nsis\.Count -ne 1/);
     expect(prepare.run).toMatch(/\$msi\.Count -ne 1/);
+    expect(prepare.run).toContain(
+      '"Companion-Desk_${version}_windows-x64-setup.exe"',
+    );
+    expect(prepare.run).toContain(
+      '"Companion-Desk_${version}_windows-x64.msi"',
+    );
     expect(prepare.run).toMatch(/Get-FileHash/);
     expect(prepare.run).toMatch(/SHA256SUMS\.txt/);
   });

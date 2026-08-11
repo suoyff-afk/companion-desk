@@ -112,8 +112,8 @@ jobs:
           }
 
           $artifactDir = New-Item -ItemType Directory -Path "artifacts" -Force
-          $exeTarget = Join-Path $artifactDir "Companion-Desk_$version_windows-x64-setup.exe"
-          $msiTarget = Join-Path $artifactDir "Companion-Desk_$version_windows-x64.msi"
+          $exeTarget = Join-Path $artifactDir "Companion-Desk_${version}_windows-x64-setup.exe"
+          $msiTarget = Join-Path $artifactDir "Companion-Desk_${version}_windows-x64.msi"
           Copy-Item -LiteralPath $nsis[0].FullName -Destination $exeTarget
           Copy-Item -LiteralPath $msi[0].FullName -Destination $msiTarget
 
