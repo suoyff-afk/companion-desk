@@ -65,7 +65,8 @@ Fresh local verification on **2026-10-01**:
 - `npm test -- --maxWorkers=2`: 50 files / 475 tests passed.
 - `cargo test --manifest-path src-tauri/Cargo.toml --offline`: 56 tests passed.
 - `npm run tauri -- build`: TypeScript/Vite and the Windows release build
-  passed; NSIS EXE and MSI bundles were generated. This is build evidence,
+  passed for integration `cecdbb6`; NSIS EXE and MSI bundles were generated.
+  The subsequent correction changes only a test fixture. This is build evidence,
   not installation, signature, checksum, or complete release acceptance.
 - Asset redistribution validation passed. The intended source tree contained
   223 files and passed the sensitive-content diagnostic. Run the complete
@@ -79,6 +80,15 @@ The dependency repair uses published Nano ID 3.3.18, a Firestore-scoped
 The gRPC import/API smoke and frontend tests do not establish a real Firebase
 or Firestore protocol acceptance result; the friend entry remains disabled.
 The Slurm `SPECIAL_EXIT` / `SE` regression now keeps requeued jobs nonterminal.
+
+The [first integration CI run](https://github.com/suoyff-afk/companion-desk/actions/runs/36843771153)
+passed the frontend job but failed one of 56 Windows Rust tests: the stdin-EOF
+success fixture exceeded its two-second process budget. Its test-only budget
+is now ten seconds to allow cold Windows PowerShell startup. A held-stdin
+negative control still timed out and failed; that temporary mutation was
+removed, and the corrected local Rust suite passed 56/56. Production query
+deadlines and cleanup logic are unchanged. The corrected commit needs its own
+CI evidence; the initial failed run is not a passing rerun.
 
 Historical **2026-09-30** native acceptance exercised home → HPC and refreshed
 a real Slurm queue/history through Tauri, observing 48 scheduler-successful

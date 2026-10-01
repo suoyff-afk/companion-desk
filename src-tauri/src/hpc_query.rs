@@ -585,7 +585,10 @@ mod tests {
             .join("System32/WindowsPowerShell/v1.0/powershell.exe");
         let mut command = Command::new(program);
         command.args(["-NoProfile", "-NonInteractive", "-Command", "[Console]::Out.Write([Console]::In.ReadToEnd()); exit 0"]);
-        let (stdout, stderr, success) = run_script(command, "payload\n", Duration::from_secs(2)).unwrap();
+        // Cold PowerShell startup can exceed two seconds on parallel Windows CI.
+        // A retained stdin handle still prevents ReadToEnd from finishing and
+        // fails this regression test within its bounded fixture deadline.
+        let (stdout, stderr, success) = run_script(command, "payload\n", Duration::from_secs(10)).unwrap();
         assert!(success);
         assert_eq!(stdout, "payload\n");
         assert_eq!(stderr, "");
