@@ -490,25 +490,113 @@ mod tests {
     }
 
     #[cfg(windows)]
+    const FIXTURE_READY: &str = "__CD_FIXTURE_READY__";
+
+    #[cfg(windows)]
+    fn native_fixture_command(mode: &str) -> Command {
+        let mut command = Command::new(std::env::current_exe().unwrap());
+        command.args(["--ignored", "--exact", "hpc_query::tests::native_process_fixture", "--nocapture"])
+            .env("CD_QUERY_TEST_FIXTURE", mode);
+        command
+    }
+
+    #[cfg(windows)]
+    struct FixtureChild { child: Child, descendant_pid: Option<u32> }
+
+    #[cfg(windows)]
+    impl FixtureChild {
+        fn spawn(mode: &str) -> Self {
+            use std::os::windows::process::CommandExt;
+            let child = native_fixture_command(mode).creation_flags(0x08000000)
+                .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();
+            Self { child, descendant_pid: None }
+        }
+    }
+
+    #[cfg(windows)]
+    impl Drop for FixtureChild {
+        fn drop(&mut self) {
+            use std::os::windows::process::CommandExt;
+            let program = std::path::PathBuf::from(std::env::var_os("WINDIR").unwrap()).join("System32/taskkill.exe");
+            // On a readiness failure the descendant PID may not be known yet.
+            // Kill the fixture tree while its parent is still alive.
+            if self.child.try_wait().ok().flatten().is_none() {
+                let _ = Command::new(&program).args(["/PID", &self.child.id().to_string(), "/T", "/F"])
+                    .creation_flags(0x08000000).stdout(Stdio::null()).stderr(Stdio::null()).status();
+            }
+            if let Some(pid) = self.descendant_pid {
+                let _ = Command::new(program).args(["/PID", &pid.to_string(), "/F"])
+                    .creation_flags(0x08000000).stdout(Stdio::null()).stderr(Stdio::null()).status();
+            }
+            let _ = self.child.kill();
+            let _ = self.child.wait();
+        }
+    }
+
+    #[cfg(windows)]
+    fn fixture_ready(receiver: &mpsc::Receiver<OutputEvent>) -> u32 {
+        let started = Instant::now();
+        let deadline = Duration::from_secs(30);
+        let mut diagnostic = Vec::new();
+        loop {
+            match receiver.recv_timeout(deadline.saturating_sub(started.elapsed())).expect("native fixture readiness") {
+                OutputEvent::Chunk(false, bytes) => {
+                    diagnostic.extend(bytes);
+                    assert!(diagnostic.len() < 512, "unexpected fixture diagnostics");
+                    let text = std::str::from_utf8(&diagnostic).unwrap();
+                    if let Some((_, tail)) = text.split_once(FIXTURE_READY) {
+                        if let Some((pid, _)) = tail.split_once('\n') { return pid.trim().parse().unwrap(); }
+                    }
+                }
+                OutputEvent::Chunk(true, _) => {} // The test harness prints its preamble on stdout.
+                event => panic!("fixture exited before readiness: {event:?}"),
+            }
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    #[ignore = "native subprocess fixture, invoked explicitly by the process regression tests"]
+    fn native_process_fixture() {
+        use std::os::windows::process::CommandExt;
+        let mode = std::env::var("CD_QUERY_TEST_FIXTURE").expect("fixture mode");
+        let _descendant = if mode == "parent" {
+            let descendant = native_fixture_command("descendant").creation_flags(0x08000000)
+                .stdin(Stdio::null()).spawn().unwrap();
+            Some(FixtureChild { child: descendant, descendant_pid: None })
+        } else {
+            eprintln!("{FIXTURE_READY}{}", std::process::id());
+            std::io::stderr().flush().unwrap();
+            if mode != "descendant" {
+                // Readiness is outside the monitored deadline. Closing this
+                // input gate starts the timeout or overflow behavior.
+                let mut input = Vec::new();
+                std::io::stdin().read_to_end(&mut input).unwrap();
+                if mode == "overflow" { std::io::stdout().write_all(&[b'x'; 8192]).unwrap(); }
+            }
+            None
+        };
+        thread::sleep(Duration::from_secs(60));
+    }
+
+    #[cfg(windows)]
     #[test]
     fn real_subprocess_is_reaped_on_timeout_and_overflow() {
-        use std::os::windows::process::CommandExt;
-        let program = std::path::PathBuf::from(std::env::var_os("WINDIR").unwrap())
-            .join("System32/WindowsPowerShell/v1.0/powershell.exe");
-        for (script, timeout, limit) in [
-            ("Start-Sleep -Seconds 20", Duration::from_millis(50), 512),
-            ("[Console]::Out.Write(('x' * 8192)); Start-Sleep -Seconds 20", Duration::from_secs(5), 512),
+        for (mode, timeout, expected) in [
+            ("sleep", Duration::from_millis(50), "timed out"),
+            ("overflow", Duration::from_secs(5), "limit"),
         ] {
-            let mut child = Command::new(&program).args(["-NoProfile", "-NonInteractive", "-Command", script])
-                .creation_flags(0x08000000).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();
+            let mut fixture = FixtureChild::spawn(mode);
             let (tx, rx) = mpsc::channel();
             let total = Arc::new(AtomicUsize::new(0));
             let cancelled = Arc::new(AtomicBool::new(false));
-            let out = stream_reader(child.stdout.take().unwrap(), true, tx.clone(), total.clone(), cancelled.clone());
-            let err = stream_reader(child.stderr.take().unwrap(), false, tx, total, cancelled);
-            let error = monitor_process(&mut child, &rx, timeout, limit).unwrap_err();
-            assert!(error.contains("timed out") || error.contains("limit"));
-            assert!(child.try_wait().unwrap().is_some());
+            let out = stream_reader(fixture.child.stdout.take().unwrap(), true, tx.clone(), total.clone(), cancelled.clone());
+            let err = stream_reader(fixture.child.stderr.take().unwrap(), false, tx, total, cancelled);
+            fixture_ready(&rx);
+            drop(fixture.child.stdin.take());
+            let error = monitor_process(&mut fixture.child, &rx, timeout, 512).unwrap_err();
+            assert!(error.contains(expected), "expected {expected}, got {error}");
+            assert!(fixture.child.try_wait().unwrap().is_some());
             out.join().unwrap();
             err.join().unwrap();
         }
@@ -517,36 +605,24 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn inherited_descendant_pipes_cannot_hold_query_guard_past_deadline() {
-        use std::os::windows::process::CommandExt;
-        let program = std::path::PathBuf::from(std::env::var_os("WINDIR").unwrap())
-            .join("System32/WindowsPowerShell/v1.0/powershell.exe");
-        let script = format!("$desc = Start-Process -FilePath '{}' -ArgumentList '-NoProfile -NonInteractive -Command Start-Sleep -Seconds 5' -NoNewWindow -PassThru; [Console]::Out.WriteLine($desc.Id); Start-Sleep -Seconds 30", program.display());
-        let mut child = Command::new(&program).args(["-NoProfile", "-NonInteractive", "-Command", &script])
-            .creation_flags(0x08000000).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();
+        let mut fixture = FixtureChild::spawn("parent");
         let (tx, rx) = mpsc::channel();
         let total = Arc::new(AtomicUsize::new(0));
         let cancelled = Arc::new(AtomicBool::new(false));
-        let out_pipe = share_pipe(child.stdout.take().unwrap());
-        let err_pipe = share_pipe(child.stderr.take().unwrap());
+        let out_pipe = share_pipe(fixture.child.stdout.take().unwrap());
+        let err_pipe = share_pipe(fixture.child.stderr.take().unwrap());
         let out = stream_reader(SharedPipe(out_pipe.clone()), true, tx.clone(), total.clone(), cancelled.clone());
         let err = stream_reader(SharedPipe(err_pipe.clone()), false, tx, total, cancelled.clone());
-        let descendant_pid = loop {
-            if let OutputEvent::Chunk(true, bytes) = rx.recv_timeout(Duration::from_secs(5)).unwrap() {
-                break String::from_utf8(bytes).unwrap().trim().parse::<u32>().unwrap();
-            }
-        };
+        fixture.descendant_pid = Some(fixture_ready(&rx));
         let guard = QueryGuard::acquire().unwrap();
         let start = Instant::now();
-        let error = monitor_process(&mut child, &rx, Duration::from_millis(50), 512).unwrap_err();
+        let error = monitor_process(&mut fixture.child, &rx, Duration::from_millis(50), 512).unwrap_err();
         assert!(error.contains("timed out"));
-        assert!(child.try_wait().unwrap().is_some());
+        assert!(fixture.child.try_wait().unwrap().is_some());
         let detached = finish_pipe_workers(vec![out, err], &cancelled, &[Arc::downgrade(&out_pipe), Arc::downgrade(&err_pipe)]);
         drop(guard);
         let elapsed = start.elapsed();
-        // Test fixture cleanup targets its explicit descendant only.
-        let _ = Command::new(&program).args(["-NoProfile", "-NonInteractive", "-Command",
-            &format!("Stop-Process -Id {descendant_pid} -Force -ErrorAction SilentlyContinue")])
-            .creation_flags(0x08000000).stdout(Stdio::null()).stderr(Stdio::null()).status();
+        drop(fixture);
         assert!(elapsed < Duration::from_secs(1), "cleanup blocked for {elapsed:?}");
         assert_eq!(detached, 0, "cancelled pipe workers must close their handles");
         assert!(QueryGuard::acquire().is_ok());
@@ -582,15 +658,12 @@ mod tests {
     #[test]
     fn completed_script_writer_closes_stdin_before_waiting_for_process() {
         let program = std::path::PathBuf::from(std::env::var_os("WINDIR").unwrap())
-            .join("System32/WindowsPowerShell/v1.0/powershell.exe");
-        let mut command = Command::new(program);
-        command.args(["-NoProfile", "-NonInteractive", "-Command", "[Console]::Out.Write([Console]::In.ReadToEnd()); exit 0"]);
-        // Cold PowerShell startup can exceed two seconds on parallel Windows CI.
-        // A retained stdin handle still prevents ReadToEnd from finishing and
-        // fails this regression test within its bounded fixture deadline.
-        let (stdout, stderr, success) = run_script(command, "payload\n", Duration::from_secs(10)).unwrap();
+            .join("System32/sort.exe");
+        // The native Windows sorter emits only after stdin reaches EOF. Avoid
+        // charging interpreter startup to this stdin-ownership regression.
+        let (stdout, stderr, success) = run_script(Command::new(program), "payload\n", Duration::from_secs(10)).unwrap();
         assert!(success);
-        assert_eq!(stdout, "payload\n");
+        assert_eq!(stdout.replace("\r\n", "\n"), "payload\n");
         assert_eq!(stderr, "");
     }
 }

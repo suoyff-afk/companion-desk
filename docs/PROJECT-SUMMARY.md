@@ -97,6 +97,24 @@ is automated test/build evidence; no new GitHub Release, installation, signing,
 or real-cluster acceptance is claimed. Later documentation-only commits do
 not change the code covered by this run; inspect their own CI status separately.
 
+A subsequent [documentation-only CI run](https://github.com/suoyff-afk/companion-desk/actions/runs/36863052373)
+for `0f62eec` passed the frontend job but failed two Windows process fixtures
+(54/56): the descendant readiness wait expired at five seconds, and the
+stdin-EOF result wait expired at ten seconds. Increasing the latter budget
+alone did not establish stable hosted-runner behavior; production query code
+was identical to the passing run.
+
+The Windows regression fixtures now use native `sort.exe` for stdin EOF and
+an explicitly invoked native helper for timeout, overflow, and inherited
+descendant pipes. A ready handshake separates fixture startup from the tested
+deadline; abnormal fixture cleanup reaps the explicit test processes. Overflow
+must report the output limit. Fresh local verification passed 56 tests, with
+one ignored helper entry that the active regression tests invoke explicitly.
+Held-stdin and disabled-cancellation negative controls failed as expected,
+then were removed. Production query code is unchanged. Check the
+[current main CI runs](https://github.com/suoyff-afk/companion-desk/actions/workflows/ci.yml?query=branch%3Amain)
+for hosted-runner validation of this fixture change.
+
 Historical **2026-09-30** native acceptance exercised home → HPC and refreshed
 a real Slurm queue/history through Tauri, observing 48 scheduler-successful
 array tasks. It preceded the October fixes and did not establish solver or
