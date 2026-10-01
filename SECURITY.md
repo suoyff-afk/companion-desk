@@ -2,7 +2,7 @@
 
 ## Supported use
 
-The `v0.5.0-beta` target is Windows 10/11 x64. It is an unsigned public beta,
+The `v0.5.1-beta` target is Windows 10/11 x64. It is an unsigned public beta,
 not a security-hardened enterprise product.
 
 ## Boundaries
@@ -31,7 +31,12 @@ Before publishing the exact candidate:
   executable for credentials and personal paths;
 - run asset, dependency, frontend, Rust, build, metadata, and workflow gates;
 - verify the unsigned EXE, MSI, and `SHA256SUMS.txt` produced by the tag;
-- perform isolated Windows install, launch, upgrade, and uninstall tests;
+- on the current Windows machine, use the packaged NSIS EXE for all core
+  acceptance flows and record the exact candidate evidence;
+- verify the MSI build output, SHA-256, Authenticode signature status, and
+  static package contents; do not install the MSI for this beta;
+- record the second Windows version, clean machine, and upgrade checks as known
+  limitations, not beta blockers; a stable release requires that full matrix;
 - confirm the public interface and network policy expose no friend/Firebase
   feature.
 

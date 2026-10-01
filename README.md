@@ -1,34 +1,31 @@
 # Companion Desk
 
-A small, local-first Windows companion for Codex quota checks, focused work,
-short game breaks, and quick access to Windows OpenSSH. Companion Desk is the
-product; **Kunkun is the pet** that lives on the desktop.
+[![Windows CI](https://github.com/suoyff-afk/companion-desk/actions/workflows/ci.yml/badge.svg)](https://github.com/suoyff-afk/companion-desk/actions/workflows/ci.yml)
+
+Your cute desktop companion for Codex: see your quota, stay focused, and take a
+quick break without leaving your workflow. Companion Desk is the product;
+**Kunkun is the pet** that lives on the desktop.
 
 Companion Desk is an independent community project and is not affiliated with
 or endorsed by OpenAI.
 
+## [Download for Windows](https://github.com/suoyff-afk/companion-desk/releases)
+
+The source manifests are version `0.5.1` and target Windows 10/11 x64. Check the
+Releases page for the current published beta. Free, local-first, and no telemetry.
+
+- **See your Codex quota** with explicit unavailable and stale states.
+- **Open HPC from home** to query Slurm task states and registered projects,
+  alongside your interactive SSH terminal.
+- **Stay focused with local sessions** and completion notes stored on your PC.
+- **Take a quick break with local games** between work sessions.
+
 ![Companion Desk compact home](docs/images/companion-home.png)
-
-## Public beta
-
-`v0.5.0-beta` targets Windows 10/11 x64. It is intentionally local-first:
-
-- floating Kunkun pet with a compact glass desk;
-- local Codex 5-hour and weekly quota display;
-- a separate local activity view;
-- focus timer with a completion note;
-- local Gomoku and 2048;
-- embedded Windows OpenSSH using the user's own SSH config alias.
-
-**Friend networking is not included in this beta.** Firebase is disabled in the
-public interface. Using the shipped beta does not require a Firebase project or configuration.
-
-![Companion Desk Token view](docs/images/token-view.png)
 
 ## Download and verify
 
-When published, the `v0.5.0-beta` GitHub Release is intended to contain exactly
-these Windows assets:
+Each published beta on the Releases page lists its actual Windows files. Use
+the exact filenames shown there. Depending on the release, files may include:
 
 - unsigned NSIS **EXE** installer — primary choice;
 - unsigned **MSI** installer — backup for environments that prefer MSI;
@@ -36,15 +33,15 @@ these Windows assets:
 
 The installers are not code-signed. Windows SmartScreen may show “Unknown
 publisher”. Download only from this repository's GitHub Release, then compare
-the installer hash with `SHA256SUMS.txt` before running it:
+the installer hash with `SHA256SUMS.txt` before running it. This example uses
+the version `0.5.1` filename pattern; run it only when that exact file is listed
+in the selected release:
 
 ```powershell
-Get-FileHash .\Companion-Desk_0.5.0-beta_windows-x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Companion-Desk_0.5.1-beta_windows-x64-setup.exe -Algorithm SHA256
 ```
 
 Do not bypass a warning when the filename or hash does not match the release.
-Clean-machine acceptance remains a release gate and must not be claimed until
-the exact candidate has recorded evidence.
 
 ## Data and feature boundaries
 
@@ -58,15 +55,25 @@ data; it never substitutes an estimate derived from local history.
 The local activity view reads Codex session records present on this computer.
 It is useful for trends but is not an authoritative billing or quota record.
 
+![Companion Desk Token view](docs/images/token-view.png)
+
 ### HPC / SSH
 
-The HPC page is an embedded Windows OpenSSH terminal, not a cluster scheduler
-or remote monitoring service. Configure a host alias in your own OpenSSH config
-and enter that alias in Companion Desk. The app does not ship a private host,
-username, or credential. It does not intentionally save SSH passwords,
-commands, or terminal output.
+The home screen opens the HPC workbench directly. It combines an embedded
+Windows OpenSSH terminal with a separate, manual, read-only Slurm task board.
+Configure an SSH host alias in your own OpenSSH config and enter that alias in
+Companion Desk. Refresh queries the current user's queue and the previous seven
+days of accounting history; a saved project queries its registered job IDs.
+Queue and history errors, stale data, and last-update times are shown separately.
+The board does not submit, cancel, or rerun jobs, and refresh never types into
+the interactive terminal.
 
-The UI uses `tud-hpc` only as a neutral example of an SSH config alias.
+The task board reports scheduler states and exit codes. It does not inspect
+solver logs, checkpoints, estimated completion time, or scientific acceptance;
+a successful scheduler state is not evidence that a simulation passed its
+scientific checks. Companion Desk does not ship a cluster hostname, username,
+or credential. See [docs/PROJECT-SUMMARY.md](docs/PROJECT-SUMMARY.md) for the
+current source map and handoff status.
 
 ### Local storage and networking
 
@@ -74,6 +81,9 @@ Focus notes, game state, window layout, and preferences stay in the local app
 store. The beta contains no analytics, advertising SDK, or automatic crash
 upload. See [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md) for the full
 boundary.
+
+**Friend networking is not included in this beta.** Firebase is disabled in the
+public interface. Using the shipped beta does not require a Firebase project or configuration.
 
 ## Development
 
@@ -87,7 +97,7 @@ Requirements:
 ```powershell
 npm ci
 npm run release:assets:gate
-npm test
+npm test -- --maxWorkers=2
 npm run build
 cargo test --manifest-path src-tauri/Cargo.toml
 npm run tauri dev

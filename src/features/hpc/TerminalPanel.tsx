@@ -55,7 +55,7 @@ export const createXtermTerminal: TerminalFactory = async () => {
   return { terminal, fit };
 };
 
-type ConnectionStatus = "Disconnected" | "Connecting" | "Connected" | "Exited" | "Error";
+type ConnectionStatus = "Disconnected" | "Connecting" | "Started" | "Exited" | "Error";
 
 interface TerminalPanelProps {
   hostAlias: string;
@@ -191,7 +191,7 @@ export function TerminalPanel({ hostAlias, hostValid, bridge, terminalFactory, o
   }, []);
 
   const connect = async () => {
-    if (cleanupPending || !hostValid || status === "Connecting" || status === "Connected") return;
+    if (cleanupPending || !hostValid || status === "Connecting" || status === "Started") return;
     const terminal = terminalRef.current;
     if (!terminal) return;
     const attempt = attemptRef.current + 1;
@@ -206,8 +206,8 @@ export function TerminalPanel({ hostAlias, hostValid, bridge, terminalFactory, o
         return;
       }
       sessionRef.current = sessionId;
-      setStatus("Connected");
-      setDetail(`Connected to ${hostAlias}.`);
+      setStatus("Started");
+      setDetail(`SSH process started for ${hostAlias}. Complete authentication in the terminal.`);
       terminal.focus();
       onConnected();
     } catch (error) {
@@ -230,7 +230,7 @@ export function TerminalPanel({ hostAlias, hostValid, bridge, terminalFactory, o
     }
   };
 
-  const connected = status === "Connected";
+  const connected = status === "Started";
   return (
     <>
       <div className="glass-panel ssh-connection-bar" role="group" aria-label="SSH connection controls">

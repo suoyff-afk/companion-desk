@@ -1,4 +1,4 @@
-# Companion Desk 0.5.0 public-beta release process
+# Companion Desk 0.5.1 public-beta release process
 
 This is the single release route. Use
 `docs/GITHUB-RELEASE-CHECKLIST.md` to record evidence; an unchecked gate is not
@@ -7,8 +7,8 @@ a release claim.
 ## Contract
 
 The selected candidate tag identifies one immutable candidate. Use
-`v0.5.0-beta` for the first candidate; each retry uses the next unused
-`v0.5.0-beta.N` tag. The beta is local-first for Windows 10 and Windows 11 x64
+`v0.5.1-beta` for the first candidate; each retry uses the next unused
+`v0.5.1-beta.N` tag. The beta is local-first for Windows 10 and Windows 11 x64
 and includes the floating companion, trustworthy Codex quota, local activity,
 focus tools, Gomoku, 2048, and embedded Windows OpenSSH.
 
@@ -45,9 +45,11 @@ block this beta.
 7. **Exact artifacts:** the tagged commit yields one unsigned EXE, one unsigned
    MSI, matching SHA-256 checksums, clean source archives, and an inner
    executable that passes the path scan.
-8. **Isolated Windows acceptance:** Windows 10 and Windows 11 x64 clean install,
-   launch, compatible upgrade, and uninstall checks pass for the downloaded
-   candidate.
+8. **Current-machine Windows acceptance:** the packaged NSIS EXE passes every
+   core flow on the current Windows machine; this is a blocking beta gate. The
+   MSI gate covers successful build output, SHA-256 verification, signature
+   status, and static package inspection; the MSI is not installed for this
+   beta.
 9. **GitHub draft prerelease:** the inspected assets and accurate notes remain
    in a draft prerelease until every gate has evidence.
 
@@ -58,14 +60,14 @@ pass before publishing.
 
 Freeze one reviewed candidate commit. Versions in `package.json`,
 `package-lock.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, and
-`src-tauri/tauri.conf.json` must be `0.5.0`. Keep the identifier
+`src-tauri/tauri.conf.json` must be `0.5.1`. Keep the identifier
 `com.kunkun.desk` so an existing installation upgrades instead of installing a
 second app.
 
 Run from a clean checkout:
 
 ```powershell
-$CandidateTag = "v0.5.0-beta" # First candidate; use the next unused v0.5.0-beta.N on retry.
+$CandidateTag = "v0.5.1-beta" # First candidate; use the next unused v0.5.1-beta.N on retry.
 npm ci
 npm run release:assets:gate
 npm run release:history:gate
@@ -90,13 +92,20 @@ Download the EXE, MSI, checksum file, and both generated source archives.
 Verify hashes independently and inspect every download for unexpected,
 sensitive, ignored, or machine-specific content.
 
-## Phase 3: isolated Windows acceptance
+## Phase 3: current-machine Windows acceptance
 
-On both Windows 10 x64 and Windows 11 x64 clean snapshots, test the EXE and MSI
-separately through install, first and normal launch, and uninstall. Exercise an
-upgrade from a compatible `com.kunkun.desk` installation with legacy layout
-data. Record every installer/OS pair, OS build, artifact hash, prior version,
-result, and observed post-uninstall data behavior.
+Install the downloaded NSIS EXE to an isolated E-drive directory on the current
+Windows machine. Record the OS build, candidate hash, install path, result, and
+post-uninstall or retained-data behavior. Exercise first and normal launch,
+pet/panel lifecycle, quota states, local activity, focus, both games, OpenSSH,
+offline use, and absence of friend UI or Firebase traffic. Passing these core
+flows with the exact EXE is the blocking beta gate.
+
+For the MSI, verify the build output, SHA-256 hash, Authenticode signature
+status, and static package metadata and contents. The MSI is not installed for
+this beta. A second Windows version and a clean machine have not been verified;
+they are known limitations, not beta blockers. A stable release requires the
+full Windows 10/11 x64 clean-machine and installer matrix.
 
 ## Phase 4: publish
 
@@ -108,5 +117,5 @@ publisher warning; do not imply signing or verified-publisher status.
 Only verified repository and support links may be published. Omit an unknown
 link rather than presenting a placeholder as a real URL. Do not publish while
 any blocking checklist item is unchecked. After evidence uses a tag, never move
-that tag; a candidate change requires a new incremented `v0.5.0-beta.N` tag and
+that tag; a candidate change requires a new incremented `v0.5.1-beta.N` tag and
 draft, followed by a complete rebuild and retest.

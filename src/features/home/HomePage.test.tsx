@@ -68,9 +68,9 @@ describe("HomePage", () => {
     expect(screen.getByLabelText("本周额度：48%" )).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "专注" }));
-    fireEvent.click(screen.getByRole("button", { name: "玩一下" }));
+    fireEvent.click(screen.getByRole("button", { name: "HPC 工作台" }));
     expect(onNavigate).toHaveBeenNthCalledWith(1, "focus");
-    expect(onNavigate).toHaveBeenNthCalledWith(2, "games");
+    expect(onNavigate).toHaveBeenNthCalledWith(2, "hpc");
   });
 
   it("falls back to unavailable quota copy when loading fails", () => {
@@ -119,17 +119,21 @@ describe("HomePage", () => {
     expect(screen.getByRole("button", { name: "刷新额度" })).toHaveAttribute("aria-busy", "true");
   });
 
-  it("discloses Token and HPC without permanent navigation", () => {
+  it("opens HPC from the home actions and keeps games and Token available in More", () => {
     const onNavigate = vi.fn();
     render(<HomePage quota={quotaState()} refreshQuota={vi.fn()} onNavigate={onNavigate} />);
 
     expect(screen.queryByRole("button", { name: "Token" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "更多" }));
-    fireEvent.click(screen.getByRole("button", { name: "Token" }));
-    fireEvent.click(screen.getByRole("button", { name: "HPC / SSH" }));
+    fireEvent.click(screen.getByRole("button", { name: "HPC 工作台" }));
+    expect(onNavigate).toHaveBeenCalledWith("hpc");
 
-    expect(onNavigate).toHaveBeenNthCalledWith(1, "token");
-    expect(onNavigate).toHaveBeenNthCalledWith(2, "hpc");
+    fireEvent.click(screen.getByRole("button", { name: "更多" }));
+    expect(screen.queryByRole("button", { name: "HPC / SSH" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "玩一下" }));
+    fireEvent.click(screen.getByRole("button", { name: "Token" }));
+
+    expect(onNavigate).toHaveBeenNthCalledWith(2, "games");
+    expect(onNavigate).toHaveBeenNthCalledWith(3, "token");
   });
 
   it("reports the More disclosure state so the desktop can reserve enough space", () => {

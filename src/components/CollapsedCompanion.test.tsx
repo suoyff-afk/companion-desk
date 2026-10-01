@@ -295,7 +295,7 @@ describe("collapsed companion interactions", () => {
     expect(trigger).toHaveFocus();
   });
 
-  it("starts one drag only after moving beyond 5px and suppresses the release click", () => {
+  it("starts the native drag on primary pointer down and suppresses the click after movement", () => {
     const onOpen = vi.fn();
     const onDragStart = vi.fn(async () => undefined);
     render(
@@ -304,8 +304,9 @@ describe("collapsed companion interactions", () => {
     const pet = screen.getByRole("button", { name: "展开 Companion Desk" });
 
     firePointer(pet, "pointerdown", { button: 0, pointerId: 1, clientX: 20, clientY: 20 });
+    expect(onDragStart).toHaveBeenCalledOnce();
+
     firePointer(pet, "pointermove", { pointerId: 1, clientX: 25, clientY: 20 });
-    expect(onDragStart).not.toHaveBeenCalled();
 
     firePointer(pet, "pointermove", { pointerId: 1, clientX: 26, clientY: 20 });
     firePointer(pet, "pointermove", { pointerId: 1, clientX: 40, clientY: 20 });
@@ -315,14 +316,45 @@ describe("collapsed companion interactions", () => {
     expect(onOpen).not.toHaveBeenCalled();
   });
 
+  it("does not start a native drag for a right click and still opens the context menu", () => {
+    const onDragStart = vi.fn();
+    function ControlledCompanion() {
+      const [menuOpen, setMenuOpen] = useState(false);
+      return (
+        <CollapsedCompanion
+          value={62}
+          unit="%"
+          label="Codex 用量"
+          menuOpen={menuOpen}
+          onMenuOpenChange={setMenuOpen}
+          onOpen={vi.fn()}
+          onDragStart={onDragStart}
+        />
+      );
+    }
+    render(<ControlledCompanion />);
+    const pet = screen.getByRole("button", { name: "展开 Companion Desk" });
+
+    firePointer(pet, "pointerdown", { button: 2, pointerId: 1, clientX: 20, clientY: 20 });
+    fireEvent.contextMenu(pet);
+
+    expect(onDragStart).not.toHaveBeenCalled();
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+  });
+
   it("keeps a short click as the open action", () => {
     const onOpen = vi.fn();
+    const onDragStart = vi.fn();
     render(
-      <CollapsedCompanion value={62} unit="%" label="Codex 用量" onOpen={onOpen} onDragStart={vi.fn()} />,
+      <CollapsedCompanion value={62} unit="%" label="Codex 用量" onOpen={onOpen} onDragStart={onDragStart} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "展开 Companion Desk" }));
+    const pet = screen.getByRole("button", { name: "展开 Companion Desk" });
+    firePointer(pet, "pointerdown", { button: 0, pointerId: 1, clientX: 20, clientY: 20 });
+    firePointer(pet, "pointerup", { pointerId: 1, clientX: 20, clientY: 20 });
+    fireEvent.click(pet);
 
+    expect(onDragStart).toHaveBeenCalledOnce();
     expect(onOpen).toHaveBeenCalledOnce();
   });
 
@@ -354,11 +386,11 @@ describe("collapsed companion interactions", () => {
     firePointer(pet, "pointerdown", { button: 0, pointerId: 1, clientX: 20, clientY: 20 });
     firePointer(pet, "lostpointercapture", { pointerId: 1, clientX: 20, clientY: 20 });
     firePointer(pet, "pointermove", { pointerId: 1, clientX: 30, clientY: 20 });
-    expect(onDragStart).not.toHaveBeenCalled();
+    expect(onDragStart).toHaveBeenCalledOnce();
 
     firePointer(pet, "pointerdown", { button: 0, pointerId: 2, clientX: 20, clientY: 20 });
     firePointer(pet, "pointermove", { pointerId: 2, clientX: 26, clientY: 20 });
-    expect(onDragStart).toHaveBeenCalledOnce();
+    expect(onDragStart).toHaveBeenCalledTimes(2);
   });
 
   it("isolates releasePointerCapture errors and preserves the click", () => {

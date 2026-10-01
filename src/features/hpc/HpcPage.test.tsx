@@ -76,6 +76,40 @@ function enterHostAlias(value = "tud-hpc") {
 }
 
 describe("HpcPage", () => {
+  it("shows one task board whose refresh does not type into the interactive terminal", async () => {
+    const { bridge } = bridgeHarness();
+    const terminal = terminalHarness();
+    const queryBridge = {
+      query: vi.fn(async () => ({
+        hostAlias: "tud-hpc",
+        queriedAt: "2026-09-30T16:00:00Z",
+        historyDays: 7,
+        queue: [{ jobId: "100_0", name: "case-a", state: "RUNNING", elapsed: "00:05:00", reason: "node-a", exitCode: null, workDir: "/example/run" }],
+        history: [],
+        issues: [],
+      })),
+    };
+    render(<HpcPage terminalBridge={bridge} terminalFactory={terminal.factory} queryBridge={queryBridge} />);
+    enterHostAlias();
+
+    expect(screen.getAllByRole("heading", { name: "任务看板" })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: /^刷新$/ }));
+    expect(await screen.findByText("case-a")).toBeInTheDocument();
+    expect(queryBridge.query).toHaveBeenCalledWith("tud-hpc", []);
+    expect(bridge.write).not.toHaveBeenCalled();
+  });
+
+  it("describes local SSH startup without claiming remote authentication", async () => {
+    const { bridge } = bridgeHarness();
+    const terminal = terminalHarness();
+    render(<HpcPage terminalBridge={bridge} terminalFactory={terminal.factory} />);
+    enterHostAlias();
+    fireEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
+    expect(await screen.findByText(/^Started$/i)).toBeInTheDocument();
+    expect(screen.getByText(/Complete authentication in the terminal/)).toBeInTheDocument();
+    expect(screen.queryByText(/^Connected$/i)).not.toBeInTheDocument();
+  });
+
   it("starts a fresh install with an empty host alias and cannot connect", () => {
     const { bridge } = bridgeHarness();
     const terminal = terminalHarness();
@@ -102,7 +136,10 @@ describe("HpcPage", () => {
 
   it("keeps SSH controls available after saved-host loading fails and saves on a later connection", async () => {
     vi.spyOn(Storage.prototype, "getItem")
-      .mockImplementationOnce(() => { throw new Error("storage unavailable"); });
+      .mockImplementation((key) => {
+        if (key === "kunkun-desk.hpc") throw new Error("storage unavailable");
+        return null;
+      });
     const { bridge } = bridgeHarness();
     const terminal = terminalHarness();
 
@@ -112,7 +149,7 @@ describe("HpcPage", () => {
     enterHostAlias();
     fireEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
 
-    expect(await screen.findByText(/^Connected$/i)).toBeInTheDocument();
+    expect(await screen.findByText(/^Started$/i)).toBeInTheDocument();
     expect(screen.queryByText("Saved SSH host could not be loaded. Enter it again to continue.")).not.toBeInTheDocument();
   });
 
@@ -124,13 +161,13 @@ describe("HpcPage", () => {
     render(<HpcPage terminalBridge={bridge} terminalFactory={terminal.factory} />);
     enterHostAlias();
     fireEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
-    await screen.findByText(/^Connected$/i);
+    await screen.findByText(/^Started$/i);
 
     expect(await screen.findByText("SSH host could not be saved. It will retry on the next connection.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^Disconnect$/i }));
     await screen.findByText(/^Disconnected$/i);
     fireEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
-    await screen.findByText(/^Connected$/i);
+    await screen.findByText(/^Started$/i);
     expect(screen.queryByText("SSH host could not be saved. It will retry on the next connection.")).not.toBeInTheDocument();
   });
 
@@ -165,7 +202,7 @@ describe("HpcPage", () => {
     const terminal = terminalHarness();
     render(<HpcPage terminalBridge={bridge} terminalFactory={terminal.factory} />);
 
-    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+    expect(within(screen.getByLabelText("Embedded SSH terminal")).getByRole("status")).toHaveAttribute("aria-live", "polite");
     expect(screen.getByLabelText("SSH terminal output")).toBeInTheDocument();
     expect(XTERM_OPTIONS.screenReaderMode).toBe(true);
   });
@@ -187,7 +224,7 @@ describe("HpcPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
 
     await waitFor(() => expect(bridge.start).toHaveBeenCalledWith("tud-hpc", 100, 32, expect.any(Function)));
-    expect(await screen.findByText(/^Connected$/i)).toBeInTheDocument();
+    expect(await screen.findByText(/^Started$/i)).toBeInTheDocument();
   });
 
   it("fits xterm when its terminal region is resized", () => {
@@ -222,7 +259,7 @@ describe("HpcPage", () => {
     render(<HpcPage terminalBridge={harness.bridge} terminalFactory={terminal.factory} />);
     enterHostAlias();
     fireEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
-    await screen.findByText(/^Connected$/i);
+    await screen.findByText(/^Started$/i);
 
     act(() => harness.emit({ event: "output", data: "aGk=" }));
     expect(terminal.terminal.write).toHaveBeenCalledWith(new Uint8Array([104, 105]));
@@ -238,7 +275,7 @@ describe("HpcPage", () => {
     render(<HpcPage terminalBridge={harness.bridge} terminalFactory={terminal.factory} />);
     enterHostAlias();
     fireEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
-    await screen.findByText(/^Connected$/i);
+    await screen.findByText(/^Started$/i);
 
     act(() => terminal.listeners.data?.("squeue\r"));
     await waitFor(() => expect(harness.bridge.write).toHaveBeenCalledWith("session-1", "squeue\r"));
@@ -268,7 +305,7 @@ describe("HpcPage", () => {
     const view = render(<HpcPage terminalBridge={bridge} terminalFactory={terminal.factory} />);
     enterHostAlias();
     fireEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
-    await screen.findByText(/^Connected$/i);
+    await screen.findByText(/^Started$/i);
 
     view.unmount();
 
@@ -300,14 +337,14 @@ describe("HpcPage", () => {
     render(<HpcPage terminalBridge={bridge.bridge} terminalFactory={terminal.factory} />);
     enterHostAlias();
     fireEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
-    await screen.findByText(/^Connected$/i);
+    await screen.findByText(/^Started$/i);
     act(() => bridge.emitAt(0, { event: "exit", code: 0 }));
     fireEvent.click(screen.getByRole("button", { name: /^Reconnect$/i }));
-    await screen.findByText(/^Connected$/i);
+    await screen.findByText(/^Started$/i);
 
     act(() => bridge.emitAt(0, { event: "error", message: "old session error" }));
 
-    expect(screen.getByText(/^Connected$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Started$/i)).toBeInTheDocument();
     expect(screen.queryByText(/old session error/i)).not.toBeInTheDocument();
   });
 
@@ -318,14 +355,14 @@ describe("HpcPage", () => {
     render(<HpcPage terminalBridge={harness.bridge} terminalFactory={terminal.factory} />);
     enterHostAlias();
     fireEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
-    await screen.findByText(/^Connected$/i);
+    await screen.findByText(/^Started$/i);
 
     act(() => terminal.listeners.data?.("x"));
 
     expect(await screen.findByText(/^Error$/i)).toBeInTheDocument();
     await waitFor(() => expect(harness.bridge.close).toHaveBeenCalledWith("session-1"));
     fireEvent.click(screen.getByRole("button", { name: /^Reconnect$/i }));
-    await screen.findByText(/^Connected$/i);
+    await screen.findByText(/^Started$/i);
     expect(harness.bridge.close.mock.invocationCallOrder[0]).toBeLessThan(harness.bridge.start.mock.invocationCallOrder[1]);
   });
 
@@ -337,15 +374,15 @@ describe("HpcPage", () => {
     render(<HpcPage terminalBridge={harness.bridge} terminalFactory={terminal.factory} />);
     enterHostAlias();
     fireEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
-    await screen.findByText(/^Connected$/i);
+    await screen.findByText(/^Started$/i);
     act(() => terminal.listeners.data?.("pending"));
     act(() => harness.emitAt(0, { event: "exit", code: 0 }));
     fireEvent.click(screen.getByRole("button", { name: /^Reconnect$/i }));
-    await screen.findByText(/^Connected$/i);
+    await screen.findByText(/^Started$/i);
 
     await act(async () => oldWrite.reject(new Error("late old write failure")));
 
-    expect(screen.getByText(/^Connected$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Started$/i)).toBeInTheDocument();
     expect(harness.bridge.close).not.toHaveBeenCalledWith("session-2");
   });
 });

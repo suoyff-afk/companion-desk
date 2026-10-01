@@ -1,7 +1,7 @@
 {
   "name": "kunkun-desk",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "A local-first Windows desktop companion for Codex quota, focus, games, and OpenSSH.",
   "type": "module",
   "scripts": {
@@ -41,8 +41,11 @@
     "yaml": "^2.9.0"
   },
   "overrides": {
+    "@firebase/firestore": {
+      "@grpc/grpc-js": "1.13.6"
+    },
     "postcss": {
-      "nanoid": "https://codeload.github.com/ai/nanoid/tar.gz/73d67168136b36fd3b644159b0cff149da4905d9"
+      "nanoid": "3.3.18"
     }
   }
 }

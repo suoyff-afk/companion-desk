@@ -37,6 +37,7 @@ const quota: ProviderSnapshot = {
 };
 
 interface TestWindowPort extends DesktopWindowPort {
+  ensureVisible: NonNullable<DesktopWindowPort["ensureVisible"]>;
   emitResize(size: WindowSize): Promise<void>;
 }
 
@@ -556,6 +557,32 @@ describe("App companion views", () => {
     expect(nativeEvents.unlistenCollapsed).toHaveBeenCalledOnce();
   });
 
+  it("reapplies the saved pet size when native activation finds the app already collapsed", async () => {
+    const nativeEvents = createNativeAppEvents();
+    const storageAdapter = createMemoryAdapter();
+    await storageAdapter.set("petPreferencesV1", { size: "large", dockSide: null, reactionsEnabled: true });
+    const windowPort = createWindowPort();
+
+    render(
+      <ProductionApp
+        windowPort={windowPort}
+        storageAdapter={storageAdapter}
+        loadQuota={quotaLoader()}
+        nativeEvents={nativeEvents.port}
+      />,
+    );
+
+    await waitFor(() => expect(windowPort.setSize).toHaveBeenCalledWith({ width: 200, height: 188 }));
+    await waitFor(() => expect(windowPort.ensureVisible).toHaveBeenCalledOnce());
+    vi.mocked(windowPort.setSize).mockClear();
+    vi.mocked(windowPort.ensureVisible).mockClear();
+
+    await act(async () => nativeEvents.emitCollapsed());
+
+    await waitFor(() => expect(windowPort.setSize).toHaveBeenCalledWith({ width: 200, height: 188 }));
+    expect(windowPort.ensureVisible).toHaveBeenCalledOnce();
+  });
+
   it("warns when the native collapsed activation listener cannot be registered", async () => {
     const logger = { warn: vi.fn() };
     const nativeEvents = {
@@ -839,6 +866,7 @@ describe("App companion views", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "更多" }));
     fireEvent.click(screen.getByRole("button", { name: "玩一下" }));
     fireEvent.click(await screen.findByRole("button", { name: "打开 2048" }));
     const input = await screen.findByLabelText("2048 note");
@@ -850,6 +878,29 @@ describe("App companion views", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "打开 2048" }));
     expect(await screen.findByLabelText("2048 note")).toHaveValue("keep this game");
+  });
+
+  it("marks the retained 2048 feature inactive after returning to Game Center", async () => {
+    function Active2048({ active }: { active: boolean }) {
+      return <p>2048 is {active ? "active" : "inactive"}</p>;
+    }
+
+    render(
+      <App
+        windowPort={createWindowPort()}
+        storageAdapter={createMemoryAdapter()}
+        loadQuota={quotaLoader()}
+        features={{ game2048: Active2048 }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "更多" }));
+    fireEvent.click(screen.getByRole("button", { name: /玩/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /2048/ }));
+    expect(await screen.findByText("2048 is active")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /游戏中心/ }));
+    expect(screen.getByText("2048 is inactive")).toBeInTheDocument();
   });
 
   it("keeps a running focus summary visible on home and in the collapsed ring", async () => {

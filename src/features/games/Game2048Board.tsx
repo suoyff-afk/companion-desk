@@ -45,7 +45,7 @@ function writeBestScore(value: number): void {
   }
 }
 
-export function Game2048Board() {
+export function Game2048Board({ active = true }: { active?: boolean }) {
   const [game, setGame] = useState(() => create2048State(randomFromRolls(INITIAL_ROLLS), readBestScore()));
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
@@ -57,6 +57,8 @@ export function Game2048Board() {
   useEffect(() => { writeBestScore(game.best); }, [game.best]);
 
   useEffect(() => {
+    if (!active) return;
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.altKey || event.metaKey || isEditingTarget(event.target)) return;
       const directions: Record<string, MoveDirection | undefined> = {
@@ -67,7 +69,7 @@ export function Game2048Board() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [move]);
+  }, [active, move]);
 
   const reset = () => {
     const rolls = sampleRolls(CREATE_ROLL_COUNT);

@@ -5,19 +5,19 @@ import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
-const commit = "73d67168136b36fd3b644159b0cff149da4905d9";
 const require = createRequire(import.meta.url);
 
 describe("patched Nano ID source", () => {
-  it("pins the official 3.3.17 commit with an integrity hash", () => {
+  it("pins the official published 3.3.18 patch with its integrity hash", () => {
     const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
     const lock = JSON.parse(readFileSync(join(root, "package-lock.json"), "utf8"));
-    const nanoid = lock.packages["node_modules/postcss/node_modules/nanoid"];
+    const nanoid = lock.packages["node_modules/nanoid"]
+      ?? lock.packages["node_modules/postcss/node_modules/nanoid"];
 
-    expect(manifest.overrides.postcss.nanoid).toContain(commit);
-    expect(nanoid.version).toBe("3.3.17");
-    expect(nanoid.resolved).toContain(commit);
-    expect(nanoid.integrity).toMatch(/^sha512-/);
+    expect(manifest.overrides.postcss.nanoid).toBe("3.3.18");
+    expect(nanoid.version).toBe("3.3.18");
+    expect(nanoid.resolved).toBe("https://registry.npmjs.org/nanoid/-/nanoid-3.3.18.tgz");
+    expect(nanoid.integrity).toBe("sha512-DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==");
   });
 
   it("returns from a zero-size custom generator instead of looping", () => {

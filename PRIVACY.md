@@ -1,6 +1,6 @@
 # Privacy
 
-Companion Desk `v0.5.0-beta` is local-first. Friend networking is not included,
+Companion Desk `v0.5.1-beta` is local-first. Friend networking is not included,
 and the public beta does not connect to Firebase.
 
 ## What the app reads locally
@@ -20,6 +20,10 @@ presented as authoritative quota or billing totals.
 
 - Window, display, focus, game, and other app preferences.
 - The selected SSH host alias where the app supports restoring it.
+- HPC project names, their host aliases, and the job IDs registered by the user.
+
+Task-query snapshots and source timestamps are held in memory for the current
+view; they are not saved as a remote monitoring history.
 
 Companion Desk does not intentionally persist Codex access tokens, SSH
 passwords, SSH commands, or terminal output in its own data store.
@@ -35,6 +39,9 @@ to the Codex/ChatGPT quota endpoints used by the native quota reader.
 
 SSH traffic is handled by the local Windows OpenSSH client and goes directly to
 the host selected by the user. Companion Desk does not proxy SSH traffic.
+Manually refreshing the task board sends fixed, read-only Slurm queries over
+SSH. It requests the current user's queue and recent history, or the job IDs
+registered for the selected project.
 
 ### Not present in this beta
 

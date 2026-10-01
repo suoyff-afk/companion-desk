@@ -1,34 +1,115 @@
-# Companion Desk project summary
+# Companion Desk — current project handoff
 
-Companion Desk is a local-first Tauri 2 desktop companion for Windows 10/11
-x64. Companion Desk is the product name; **Kunkun is the pet's name**.
+**Status reviewed: 2026-10-01.** Companion Desk is a local-first Tauri 2
+desktop companion for Windows 10/11 x64. Companion Desk is the product name;
+Kunkun is the pet's name. The source manifests report version `0.5.1`; the
+release-process documents reference `v0.5.1-beta`; this source handoff creates
+no new release or tag.
+Use the stable [GitHub Releases page](https://github.com/suoyff-afk/companion-desk/releases)
+to check the current published beta and its actual files. This handoff records
+the implemented source and current scope; local development history does not
+by itself establish what is published on `main`.
 
-## v0.5.0-beta scope
+## Current product
 
-- Compact floating pet and expanded glass panel.
-- Local Codex quota reader with explicit unavailable and stale states.
-- Separate, non-authoritative local Codex activity summary.
-- Focus timer with a completion note.
-- Local Gomoku and 2048.
-- Embedded Windows OpenSSH terminal using a user-selected config alias.
+The home screen puts **HPC 工作台** first and **专注** second. Games and Token
+are under **更多**. The HPC view combines an embedded Windows OpenSSH terminal
+and a separate manual, read-only Slurm task board. Configure a host alias in
+the user's OpenSSH config; the app supplies no host or credentials.
 
-Friend networking is deferred. The public beta disables friend/Firebase code at
-the entry point, exposes no friend controls, and requires no Firebase project or
-configuration.
+The task board queries the current user's queue and the previous seven days of
+accounting history, or registered job IDs for a selected project. It retains
+per-source timestamps and stale/error states. Projects store host alias and
+registered IDs in local app storage. Array allocations are expanded where
+Slurm supplies task rows; step records are excluded. A task counts as
+successful only when its scheduler state is `COMPLETED` and its exit code is
+`0:0`. Partial query failures and compressed array results are marked as
+incomplete.
 
-## Architecture
+This is scheduler visibility only. The app does not inspect solver output,
+checkpoints, ETA, or scientific acceptance. It does not submit, cancel, rerun,
+or automatically refresh jobs. A completed scheduler job is not a scientific
+result gate.
 
-- React 19, TypeScript, Vite, and Vitest for the UI.
-- Tauri 2 and Rust for native window behavior, Codex data access, local
-  activity, and OpenSSH.
-- Local app storage for preferences, focus notes, and game state.
+Other current features include Codex quota and local activity views, local
+focus sessions, and local games. Quota availability depends on non-public
+response formats that may change. Friend networking is deferred; it is disabled
+in the public entry point. Companion Desk is an independent community project
+and is not affiliated with or endorsed by OpenAI.
 
-The beta contains no chat, telemetry, advertising, or automatic crash
-reporting. It is an independent community project and is not affiliated with or
-endorsed by OpenAI.
+## Source map
 
-## Release target
+- `src/features/home/HomePage.tsx` — home actions and primary navigation.
+- `src/features/hpc/HpcPage.tsx` — HPC page composition: task board and
+  terminal.
+- `src/features/hpc/HpcTaskBoard.tsx` — refresh lifecycle, source freshness,
+  project selection and task list UI.
+- `src/features/hpc/hpcTaskModel.ts` — job merging, Slurm state classification,
+  summaries, array handling, and project ID validation.
+- `src/features/hpc/hpcQueryBridge.ts` — Tauri command bridge and snapshot
+  validation.
+- `src/features/hpc/TerminalPanel.tsx` and `terminalBridge.ts` — interactive
+  OpenSSH terminal UI and bridge.
+- `src-tauri/src/hpc_query.rs` — bounded, fixed read-only `squeue`/`sacct`
+  query, parsing, time/output limits, and sanitized errors.
+- `src-tauri/src/ssh.rs` — native OpenSSH terminal process handling and host
+  alias validation.
+- `src/lib/persistence.ts` — local persistence adapter, including HPC project
+  registrations.
 
-The candidate is `v0.5.0-beta`, Windows-only, with an unsigned EXE installer as
-the primary artifact, MSI as a backup, and `SHA256SUMS.txt` for both. Publishing
-remains gated by the evidence in `docs/GITHUB-RELEASE-CHECKLIST.md`.
+## Validation evidence and limits
+
+Fresh local verification on **2026-10-01**:
+
+- `npm ci` succeeded from the updated lock file.
+- `npm test -- --maxWorkers=2`: 50 files / 475 tests passed.
+- `cargo test --manifest-path src-tauri/Cargo.toml --offline`: 56 tests passed.
+- `npm run tauri -- build`: TypeScript/Vite and the Windows release build
+  passed; NSIS EXE and MSI bundles were generated. This is build evidence,
+  not installation, signature, checksum, or complete release acceptance.
+- Asset redistribution validation passed. The intended source tree contained
+  223 files and passed the sensitive-content diagnostic. Run the complete
+  reachable-history gate on the actual public commit before publishing.
+- Dependency audit passed the high-severity gate with zero high/critical
+  findings. Two moderate findings remain in Vitest / its mocker tooling
+  ([GHSA-82fw-gwwq-j7x9](https://github.com/advisories/GHSA-82fw-gwwq-j7x9)).
+
+The dependency repair uses published Nano ID 3.3.18, a Firestore-scoped
+`grpc-js` 1.13.6 override, and compatible Browserslist/baseline lock updates.
+The gRPC import/API smoke and frontend tests do not establish a real Firebase
+or Firestore protocol acceptance result; the friend entry remains disabled.
+The Slurm `SPECIAL_EXIT` / `SE` regression now keeps requeued jobs nonterminal.
+
+Historical **2026-09-30** native acceptance exercised home → HPC and refreshed
+a real Slurm queue/history through Tauri, observing 48 scheduler-successful
+array tasks. It preceded the October fixes and did not establish solver or
+scientific-result acceptance. No new native interaction or real-cluster
+acceptance is claimed for the October source. A browser preview cannot prove
+Windows window behavior or OpenSSH authentication. Check GitHub Actions for
+CI evidence belonging to the actual `main` commit; local results are separate.
+
+## Cloud and GitHub handoff — 2026-10-01
+
+The official Dots creation page reported that the account plan did not yet
+include Dot access, so no Dot task was created. The user has since authorized
+organizing the implemented source and publishing the existing public GitHub
+repository for a cloud agent/Dots takeover. This request is a development
+handoff; the Windows desktop application itself is not being converted into a
+cloud application.
+
+This source synchronization integrates the HPC task board, primary home
+navigation, dependency repairs, and this handoff on top of the existing public
+`main` history. Local development history is preserved separately. Public
+`main` is the authoritative source for cloud development; the manifests remain
+`0.5.1`. Use the current GitHub commit and Actions run as synchronization and
+CI evidence. Local configuration, credentials, and build artifacts are
+excluded from the source tree.
+
+## Minimal next step
+
+Have the cloud agent select this repository's `main`, read `AGENTS.md` and
+this handoff, and inspect the current CI results. Use Linux for frontend work
+and the existing Windows CI for desktop builds. Native interaction and real
+SSH acceptance remain on the user's Windows machine. Confirm the next actual
+HPC workflow with the user before adding features; keep changes isolated from
+the installed production application until authorized.

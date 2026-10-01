@@ -1,11 +1,11 @@
-# Companion Desk 0.5.0 public-beta release checklist
+# Companion Desk 0.5.1 public-beta release checklist
 
 Check an item only after recording current evidence for the exact candidate.
 
 ## Before tagging
 
-- [ ] `$CandidateTag` records the selected candidate tag: `v0.5.0-beta` for the
-      first candidate or the next unused `v0.5.0-beta.N` for a retry.
+- [ ] `$CandidateTag` records the selected candidate tag: `v0.5.1-beta` for the
+      first candidate or the next unused `v0.5.1-beta.N` for a retry.
 - [ ] The public build and user-facing material include only the approved
       local-first scope and expose no friend control, Firebase setup, promise,
       or request.
@@ -37,7 +37,7 @@ Check an item only after recording current evidence for the exact candidate.
       internal QA material.
 - [ ] `.npmrc`, `.cargo/config.toml`, Firebase logs/exports, credentials, build
       outputs, and installers are absent from tracked public history.
-- [ ] All five manifests/locks report `0.5.0`; the identifier remains
+- [ ] All five manifests/locks report `0.5.1`; the identifier remains
       `com.kunkun.desk`; `node scripts/validate-release-tag.mjs $CandidateTag`
       passes for the selected candidate.
 - [ ] The release workflow builds without Firebase repository variables and
@@ -65,28 +65,24 @@ Check an item only after recording current evidence for the exact candidate.
       and the unsigned/Windows SmartScreen warning without claiming signing or
       verified-publisher status.
 
-## Isolated Windows acceptance
+## Current-machine Windows acceptance
 
-- [ ] The verified EXE clean-installs, launches, and uninstalls on isolated
-      Windows 10 x64 and Windows 11 x64 environments.
-- [ ] The verified MSI backup clean-installs, launches, and uninstalls on
-      isolated Windows 10 x64 and Windows 11 x64 snapshots without conflicting
-      with the EXE path.
-- [ ] Upgrading a compatible `com.kunkun.desk` installation preserves intended
-      local state, migrates legacy layouts, and creates neither a second app
-      identity nor a second companion window.
-- [ ] Native checks cover pet/panel lifecycle, quota states, local activity,
-      focus, both games, OpenSSH, offline use, and absence of friend UI or
-      Firebase traffic.
-- [ ] The evidence matrix records every EXE/MSI and Windows 10/11 pair, OS build,
-      candidate SHA-256, prior upgrade version, result, and observed
-      post-uninstall data behavior.
+- [ ] On the current Windows machine, the downloaded NSIS EXE completes core
+      acceptance: isolated E-drive install, first and normal launch, pet/panel
+      lifecycle, quota states, local activity, focus, both games, OpenSSH,
+      offline use, absence of friend UI or Firebase traffic, and safe uninstall
+      or documented retention.
+- [ ] The EXE evidence records the OS build, candidate SHA-256, install path,
+      result, and observed post-uninstall or retained-data behavior.
+- [ ] The MSI passes successful build output, SHA-256 verification,
+      Authenticode signature-status inspection, and static package inspection;
+      do not install the MSI for this beta.
 
 ## Publish
 
 - [ ] Every gate has current evidence for the selected candidate tag and
       downloaded assets; after evidence begins, a candidate change never moves
-      that tag and instead uses a new incremented `v0.5.0-beta.N` tag and draft
+      that tag and instead uses a new incremented `v0.5.1-beta.N` tag and draft
       with fresh evidence.
 - [ ] The final prerelease contains only inspected EXE, MSI,
       `SHA256SUMS.txt`, source archives, and accurate notes.
@@ -96,5 +92,8 @@ Do not publish while any blocking item is unchecked.
 
 ## Deferred, not beta gates
 
+- A second Windows version and clean-machine acceptance are known limitations,
+  not beta blockers. A stable release requires the full Windows 10/11 x64
+  clean-machine and installer matrix.
 - Production Firebase configuration/deployment and two-user verification.
 - Friend codes, requests, pokes, and all other friend UI or promises.

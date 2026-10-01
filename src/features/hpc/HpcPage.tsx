@@ -4,13 +4,16 @@ import { readAppValue, writeAppValue } from "../../lib/persistence";
 import { validateHostAlias } from "./hostValidation";
 import { createXtermTerminal, TerminalPanel, type TerminalFactory } from "./TerminalPanel";
 import { desktopTerminalBridge, type TerminalBridge } from "./terminalBridge";
+import { HpcTaskBoard } from "./HpcTaskBoard";
+import type { HpcQueryBridge } from "./hpcQueryBridge";
 
 interface HpcPageProps {
   terminalBridge?: TerminalBridge;
   terminalFactory?: TerminalFactory;
+  queryBridge?: HpcQueryBridge;
 }
 
-export function HpcPage({ terminalBridge = desktopTerminalBridge, terminalFactory = createXtermTerminal }: HpcPageProps) {
+export function HpcPage({ terminalBridge = desktopTerminalBridge, terminalFactory = createXtermTerminal, queryBridge }: HpcPageProps) {
   const [hostAlias, setHostAlias] = useState("");
   const [persistenceNotice, setPersistenceNotice] = useState<string | null>(null);
   const validation = useMemo(() => validateHostAlias(hostAlias), [hostAlias]);
@@ -74,6 +77,7 @@ export function HpcPage({ terminalBridge = desktopTerminalBridge, terminalFactor
             )}
           />
         </div>
+        <HpcTaskBoard hostAlias={hostAlias} hostValid={validation.ok} bridge={queryBridge} />
       </div>
     </section>
   );

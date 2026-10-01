@@ -60,7 +60,7 @@ type FeaturePropsByView = {
   token: TokenFeatureProps;
   focus: { onSessionChange?: (summary: FocusSummary) => void };
   games: { onNavigate: (view: "game2048" | "gomoku") => void };
-  game2048: Record<string, never>;
+  game2048: { active: boolean };
   gomoku: Record<string, never>;
   hpc: Record<string, never>;
 };
@@ -294,6 +294,7 @@ export default function App({
   const [petPreferencesLoaded, setPetPreferencesLoaded] = useState(false);
   const [idleReaction, setIdleReaction] = useState<PetReaction>("idle");
   const [layoutsLoaded, setLayoutsLoaded] = useState(false);
+  const [collapsedActivationGeneration, setCollapsedActivationGeneration] = useState(0);
   const layoutsRef = useRef<SavedWindowLayouts>({});
   const layoutGenerationRef = useRef(0);
   const layoutQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -491,7 +492,10 @@ export default function App({
     let disposed = false;
     let unlisten: (() => void) | undefined;
     void nativeEvents.listenActivateCollapsed(() => {
-      if (!disposed) collapseToPet();
+      if (!disposed) {
+        collapseToPet();
+        setCollapsedActivationGeneration((current) => current + 1);
+      }
     }).then((cleanup) => {
       if (disposed) cleanup();
       else unlisten = cleanup;
@@ -662,6 +666,7 @@ export default function App({
     activePoke,
     advancePoke,
     cancelNotification,
+    collapsedActivationGeneration,
     companionMenuOpen,
     desktopWindow,
     friendsEnabled,
@@ -801,7 +806,7 @@ export default function App({
           }
           case "game2048": {
             const Game2048Feature = features.game2048 ?? defaultFeatures.game2048;
-            content = <Game2048Feature />;
+            content = <Game2048Feature active={active} />;
             break;
           }
           case "gomoku": {

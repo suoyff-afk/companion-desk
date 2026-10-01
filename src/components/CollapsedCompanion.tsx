@@ -152,7 +152,10 @@ export function CollapsedCompanion({
 
   const startPetPointer = (event: PointerEvent<HTMLButtonElement>) => {
     if (event.button !== 0) return;
-    suppressNextClick.current = false;
+    // Assume native dragging until an undisturbed pointer-up proves this was a click.
+    // Windows can hand the pointer stream to its move loop, so React may never see a
+    // pointermove/pointerup after startDragging begins.
+    suppressNextClick.current = true;
     pointerStart.current = {
       pointerId: event.pointerId,
       x: event.clientX,
@@ -160,6 +163,11 @@ export function CollapsedCompanion({
       dragging: false,
     };
     event.currentTarget.setPointerCapture?.(event.pointerId);
+    try {
+      void Promise.resolve(onDragStart()).catch(() => undefined);
+    } catch {
+      // Native drag failures must not break later companion clicks.
+    }
   };
 
   const movePetPointer = (event: PointerEvent<HTMLButtonElement>) => {
@@ -170,15 +178,12 @@ export function CollapsedCompanion({
     start.dragging = true;
     suppressNextClick.current = true;
     event.preventDefault();
-    try {
-      void Promise.resolve(onDragStart()).catch(() => undefined);
-    } catch {
-      // Native drag failures must not break later companion clicks.
-    }
   };
 
   const finishPetPointer = (event: PointerEvent<HTMLButtonElement>) => {
-    if (pointerStart.current?.pointerId !== event.pointerId) return;
+    const start = pointerStart.current;
+    if (start?.pointerId !== event.pointerId) return;
+    if (!start.dragging) suppressNextClick.current = false;
     pointerStart.current = null;
     try {
       const hasCapture = event.currentTarget.hasPointerCapture?.(event.pointerId) ?? true;

@@ -1,6 +1,6 @@
 # Test matrix
 
-Record results for the exact frozen `v0.5.0-beta` candidate. Earlier smoke
+Record results for the exact frozen `v0.5.1-beta` candidate. Earlier smoke
 tests are useful engineering history but are not release evidence.
 
 | Area | Scenario | Required evidence |
@@ -14,13 +14,15 @@ tests are useful engineering history but are not release evidence.
 | Offline | No general network beyond unavailable quota/SSH destinations | Focus, games, preferences, and local activity remain usable |
 | OpenSSH | Valid/invalid alias, resize, disconnect | Embedded terminal only; no saved password, command, or terminal output |
 | Window | Start collapsed, drag, resize, expand, close-to-pet, exit | No duplicate, hidden, or opaque pet window |
-| Install | EXE primary and MSI backup | Install, launch, compatible upgrade, and uninstall on Windows 10/11 x64 |
+| Current Windows machine | Packaged NSIS EXE | Blocking beta acceptance covers isolated install, all core flows, and safe uninstall or documented retention |
+| MSI static package | Build, hash, signature status, and static inspection | No install is required for this beta |
+| Stable release | Full Windows 10/11 x64 installer matrix | Clean-machine EXE/MSI install, launch, upgrade, and uninstall evidence |
 | Security | Tracked history, source archives, inner executable | No secrets, personal paths, private identities, or local tool config |
 | Assets | Binary and README images | `npm run release:assets:gate` passes; authorization and provenance match `licenses/assets.json` |
 | Network policy | Public-beta build | No friend control or Firebase traffic is present |
 
 Friend networking and Firebase emulator/two-user testing are deferred to a
-later network-enabled release and are not `v0.5.0-beta` gates.
+later network-enabled release and are not `v0.5.1-beta` gates.
 
 Passing unit tests or a smoke test does not prove clean-machine installation,
 quota correctness for every account, or native window behavior.

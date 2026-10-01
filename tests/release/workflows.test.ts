@@ -339,7 +339,7 @@ describe("Windows beta release dependency gate", () => {
 
 describe("release operator checklist", () => {
   it("documents the draft beta gate and exact Windows artifacts", () => {
-    expect(checklist).toMatch(/`v0\.5\.0-beta`/);
+    expect(checklist).toMatch(/`v0\.5\.1-beta`/);
     expect(checklist).toMatch(/`companion-desk-windows-x64-unsigned`/);
     expect(checklist).toMatch(/draft and prerelease/);
     expect(checklist).toMatch(/SHA256SUMS\.txt/);

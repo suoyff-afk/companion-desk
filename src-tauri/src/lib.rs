@@ -1,6 +1,7 @@
 mod codex;
 mod codex_launcher;
 mod codex_root;
+pub mod hpc_query;
 mod models;
 mod ssh;
 mod token_history;
@@ -220,6 +221,7 @@ fn set_widget_always_on_top(
 }
 
 trait CollapsedWindowOps {
+    fn unminimize(&self) -> Result<(), String>;
     fn unmaximize(&self) -> Result<(), String>;
     fn set_resizable(&self, value: bool) -> Result<(), String>;
     fn clear_max_size(&self) -> Result<(), String>;
@@ -323,6 +325,9 @@ struct TauriCollapsedWindowOps<'a, R: tauri::Runtime> {
 }
 
 impl<R: tauri::Runtime> CollapsedWindowOps for TauriCollapsedWindowOps<'_, R> {
+    fn unminimize(&self) -> Result<(), String> {
+        self.window.unminimize().map_err(|error| error.to_string())
+    }
     fn unmaximize(&self) -> Result<(), String> {
         self.window.unmaximize().map_err(|error| error.to_string())
     }
@@ -382,15 +387,26 @@ impl<R: tauri::Runtime> CollapsedWindowOps for TauriCollapsedWindowOps<'_, R> {
     }
 }
 
-fn activate_collapsed(app: &AppHandle) {
+fn activate_main_window_with(identifier: &str, ops: &dyn CollapsedWindowOps) -> Result<(), ActivationError> {
+    if identifier == "com.companiondesk.hpc-experiment" {
+        ops.unminimize().map_err(|message| activation_error("unminimize", message))?;
+        ops.show().map_err(|message| activation_error("show", message))?;
+        ops.focus().map_err(|message| activation_error("focus", message))?;
+        Ok(())
+    } else {
+        activate_collapsed_with(ops)
+    }
+}
+
+fn activate_main_window(app: &AppHandle) {
     let Some(window) = app.get_webview_window("main") else {
-        eprintln!("failed to activate collapsed window at lookup: main window missing");
+        eprintln!("failed to activate main window at lookup: main window missing");
         return;
     };
     let ops = TauriCollapsedWindowOps { window: &window };
-    if let Err(error) = activate_collapsed_with(&ops) {
+    if let Err(error) = activate_main_window_with(&app.config().identifier, &ops) {
         eprintln!(
-            "failed to activate collapsed window at {}: {}",
+            "failed to activate main window at {}: {}",
             error.step, error.message
         );
     }
@@ -436,7 +452,7 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
                     if window.is_visible().unwrap_or(false) {
                         let _ = window.hide();
                     } else {
-                        activate_collapsed(app);
+                        activate_main_window(app);
                     }
                 }
             }
@@ -514,7 +530,7 @@ pub fn run() {
     let app = tauri::Builder::default()
         .manage(ssh::TerminalState::default())
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
-            activate_collapsed(app);
+            activate_main_window(app);
         }))
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
@@ -563,6 +579,7 @@ pub fn run() {
             set_widget_locked,
             set_widget_always_on_top,
             token_history::get_token_history,
+            hpc_query::query_hpc_jobs,
             ssh::start_ssh_terminal,
             ssh::write_ssh_terminal,
             ssh::resize_ssh_terminal,
@@ -577,7 +594,7 @@ pub fn run() {
                 ..
             } = event
             {
-                activate_collapsed(app);
+                activate_main_window(app);
             }
         })
         .on_window_event(|window, event| {
@@ -600,7 +617,7 @@ pub fn run() {
 mod tests {
     use std::cell::RefCell;
 
-    use super::{activate_collapsed_with, CollapsedWindowOps, WINDOW_STATE_FILENAME, WINDOW_STATE_FLAGS};
+    use super::{activate_collapsed_with, activate_main_window_with, CollapsedWindowOps, WINDOW_STATE_FILENAME, WINDOW_STATE_FLAGS};
     use serde_json::Value;
     use tauri_plugin_window_state::StateFlags;
 
@@ -674,7 +691,7 @@ mod tests {
     }
 
     #[test]
-    fn activation_paths_use_the_shared_collapsed_transition() {
+    fn activation_paths_use_the_shared_config_dispatch() {
         let source = include_str!("lib.rs");
         let production = source
             .split("\n#[cfg(test)]")
@@ -682,7 +699,8 @@ mod tests {
             .expect("production source must precede unit tests");
         assert!(production.contains("trait CollapsedWindowOps"));
         assert!(production.contains("fn activate_collapsed_with"));
-        assert_eq!(production.matches("activate_collapsed(app)").count(), 3);
+        assert!(production.contains("activate_main_window_with(&app.config().identifier, &ops)"));
+        assert_eq!(production.matches("activate_main_window(app)").count(), 3);
     }
 
     struct FakeOps {
@@ -710,6 +728,7 @@ mod tests {
     }
 
     impl CollapsedWindowOps for FakeOps {
+        fn unminimize(&self) -> Result<(), String> { self.call("unminimize") }
         fn unmaximize(&self) -> Result<(), String> { self.call("unmaximize") }
         fn set_resizable(&self, value: bool) -> Result<(), String> {
             self.call(if value { "resizable:true" } else { "resizable:false" })
@@ -727,6 +746,30 @@ mod tests {
         fn set_skip_taskbar(&self, value: bool) -> Result<(), String> {
             self.call(if value { "taskbar:true" } else { "taskbar:false" })
         }
+    }
+
+    #[test]
+    fn hpc_experiment_activation_preserves_geometry_and_resizability() {
+        let ops = FakeOps::new(None);
+        assert_eq!(activate_main_window_with("com.companiondesk.hpc-experiment", &ops), Ok(()));
+        assert_eq!(ops.calls(), vec!["unminimize", "show", "focus"]);
+    }
+
+    #[test]
+    fn production_activation_dispatch_retains_collapsed_behavior() {
+        let expected = FakeOps::new(None);
+        let dispatched = FakeOps::new(None);
+        assert_eq!(activate_collapsed_with(&expected), Ok(()));
+        assert_eq!(activate_main_window_with("com.kunkun.desk", &dispatched), Ok(()));
+        assert_eq!(dispatched.calls(), expected.calls());
+    }
+
+    #[test]
+    fn hpc_experiment_failed_show_keeps_geometry_untouched() {
+        let ops = FakeOps::new(Some("show"));
+        let error = activate_main_window_with("com.companiondesk.hpc-experiment", &ops).unwrap_err();
+        assert_eq!(error.step, "show");
+        assert_eq!(ops.calls(), vec!["unminimize", "show"]);
     }
 
     #[test]

@@ -1,4 +1,4 @@
-export type AppStorageKey = "focus" | "games" | "hpc" | "friends" | "windowLayouts" | "windowLayoutsV2" | "windowLayoutsV3" | "petSizeV1" | "petPreferencesV1";
+export type AppStorageKey = "focus" | "games" | "hpc" | "hpc-projects" | "friends" | "windowLayouts" | "windowLayoutsV2" | "windowLayoutsV3" | "petSizeV1" | "petPreferencesV1";
 
 export interface StorageAdapter {
   get(key: AppStorageKey): Promise<unknown>;

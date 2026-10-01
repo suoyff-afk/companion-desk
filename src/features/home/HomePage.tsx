@@ -122,6 +122,10 @@ export function HomePage({ quota, refreshQuota, focusSummary, onNavigate, friend
       </article>
 
       <div className="home-primary-actions" aria-label="常用功能">
+        <button type="button" className="home-action home-action--hpc" onClick={() => onNavigate("hpc")}>
+          <TerminalWindow weight="duotone" />
+          <span>HPC 工作台</span>
+        </button>
         <button
           type="button"
           className="home-action home-action--focus"
@@ -131,10 +135,6 @@ export function HomePage({ quota, refreshQuota, focusSummary, onNavigate, friend
           <Timer weight="duotone" />
           <span>专注</span>
           {focusTime && <small className="home-action__status">{focusTime}</small>}
-        </button>
-        <button type="button" className="home-action home-action--play" onClick={() => onNavigate("games")}>
-          <GameController weight="duotone" />
-          <span>玩一下</span>
         </button>
       </div>
 
@@ -149,8 +149,8 @@ export function HomePage({ quota, refreshQuota, focusSummary, onNavigate, friend
         </button>
         {moreOpen && (
           <div className="home-more__actions">
+            <button type="button" onClick={() => onNavigate("games")}><GameController />玩一下</button>
             <button type="button" onClick={() => onNavigate("token")}><ChartDonut />Token</button>
-            <button type="button" onClick={() => onNavigate("hpc")}><TerminalWindow />HPC / SSH</button>
           </div>
         )}
       </div>

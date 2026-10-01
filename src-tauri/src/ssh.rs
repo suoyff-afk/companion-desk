@@ -24,7 +24,7 @@ const SSH_START_ERROR_MESSAGE: &str = "Failed to start Windows OpenSSH.";
 const READER_ERROR_MESSAGE: &str = "Failed while reading SSH terminal output.";
 const WAIT_ERROR_MESSAGE: &str = "Failed while waiting for the SSH process.";
 
-fn valid_host_alias(value: &str) -> bool {
+pub(crate) fn valid_host_alias(value: &str) -> bool {
     !value.is_empty()
         && !value.starts_with('-')
         && value.len() <= HOST_ALIAS_MAX_LENGTH
@@ -109,7 +109,7 @@ fn system_directory() -> Result<PathBuf, String> {
     Err("Embedded SSH is available only in the Windows desktop build.".into())
 }
 
-fn ssh_program() -> Result<PathBuf, String> {
+pub(crate) fn ssh_program() -> Result<PathBuf, String> {
     system_directory().map(|directory| openssh_path(&directory))
 }
 

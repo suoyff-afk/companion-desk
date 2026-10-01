@@ -1,0 +1,43 @@
+.hpc-task-board { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; width: 100%; height: 100%; color: var(--text, #edf2fa); }
+.hpc-task-heading, .hpc-task-toolbar { display: flex; align-items: center; gap: 10px; }
+.hpc-task-heading { justify-content: space-between; flex-wrap: wrap; gap: 4px 10px; }
+.hpc-task-heading h2 { font-size: 15px; margin: 0; font-weight: 650; }
+.hpc-task-heading > span { font-size: 11px; color: var(--muted, #a6b2c3); }
+.hpc-task-board button, .hpc-task-board select, .hpc-task-board input:not([type=checkbox]) { font: inherit; font-size: 12px; border: 1px solid rgba(145, 164, 190, .24); color: inherit; background: rgba(12, 20, 34, .6); border-radius: 8px; min-height: 30px; }
+.hpc-task-board select, .hpc-task-board input:not([type=checkbox]) { padding: 5px 9px; min-width: 0; }
+.hpc-task-board select { flex: 1; width: 0; }
+.hpc-task-board button { padding: 5px 11px; cursor: pointer; white-space: nowrap; }
+.hpc-task-board button:disabled { cursor: default; opacity: .45; }
+.hpc-task-board button:focus-visible, .hpc-task-board select:focus-visible, .hpc-task-board input:focus-visible, .hpc-task-table-region:focus-visible { outline: 2px solid #81baff; outline-offset: 2px; }
+.hpc-task-board .hpc-task-refresh { background: rgba(78, 139, 233, .23); border-color: rgba(126, 176, 247, .45); }
+.hpc-task-filters { display: flex; gap: 4px; flex-wrap: wrap; }
+.hpc-task-filters button { border-color: transparent; min-height: 26px; padding: 3px 9px; color: var(--muted, #a6b2c3); background: transparent; }
+.hpc-task-filters button[aria-pressed=true] { color: #dcecff; background: rgba(91, 144, 225, .2); border-color: rgba(119, 164, 230, .24); }
+.hpc-task-counts { display: flex; gap: 5px 7px; flex-wrap: wrap; }
+.hpc-task-counts span { font-size: 11px; color: #bac8db; background: rgba(135, 154, 184, .09); padding: 3px 7px; border-radius: 5px; }
+.hpc-task-counts small { margin-left: 5px; color: #edc386; font-size: 10px; }
+.hpc-task-notices { font-size: 11px; color: #edc386; }
+.hpc-task-notices:empty { display: none; }
+.hpc-task-notices p { margin: 0 0 4px; overflow-wrap: anywhere; }
+.hpc-task-stamps { display: flex; flex-direction: column; gap: 3px; color: var(--muted, #a6b2c3); font-size: 10px; overflow-wrap: anywhere; }
+.hpc-task-table-region { flex: 1; min-height: 110px; overflow: auto; border: 1px solid rgba(145, 164, 190, .16); border-radius: 10px; background: rgba(10, 17, 28, .22); scrollbar-width: thin; }
+.hpc-task-table-region table { border-collapse: collapse; width: 100%; min-width: 455px; font-size: 12px; text-align: left; }
+.hpc-task-table-region th { position: sticky; top: 0; z-index: 1; background: #172131; font-size: 10px; color: #a6b2c3; font-weight: 500; }
+.hpc-task-table-region th, .hpc-task-table-region td { padding: 9px 10px; vertical-align: top; border-bottom: 1px solid rgba(145, 164, 190, .11); }
+.hpc-task-table-region td strong { font-size: 11px; font-weight: 550; font-variant-numeric: tabular-nums; }
+.hpc-task-table-region td small { display: block; margin-top: 4px; color: var(--muted, #a6b2c3); font-size: 10px; }
+.hpc-task-table-region input[type=checkbox] { accent-color: #7aaefa; }
+.hpc-task-job-name { display: block; max-width: 180px; overflow-wrap: anywhere; margin-top: 3px; color: #c6d1df; }
+.hpc-task-reason { display: block; max-width: 190px; overflow-wrap: anywhere; font-size: 11px; }
+.hpc-task-elapsed { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.hpc-task-state { white-space: nowrap; color: #b8c5d8; }
+.hpc-task-state-running { color: #85b7f6; }.hpc-task-state-ended { color: #84cbb6; }.hpc-task-state-abnormal { color: #f0bb89; }
+.hpc-task-stale { background: rgba(216, 164, 91, .035); }
+.hpc-task-empty { margin: 0; padding: 32px 14px; text-align: center; font-size: 12px; color: var(--muted, #a6b2c3); }
+.hpc-task-management { font-size: 11px; flex: none; border-top: 1px solid rgba(145, 164, 190, .16); padding-top: 8px; }
+.hpc-task-management summary { cursor: pointer; color: #a9b8cc; }
+.hpc-task-management p { color: var(--muted, #a6b2c3); margin: 8px 0; }
+.hpc-task-save { display: flex; gap: 6px; margin-bottom: 5px; }
+.hpc-task-save input { flex: 1; width: 0; }
+.hpc-task-management > small { color: var(--muted, #a6b2c3); font-size: 10px; }
+@media (max-width: 460px) { .hpc-task-board { gap: 8px; } .hpc-task-filters button { padding-inline: 8px; } }

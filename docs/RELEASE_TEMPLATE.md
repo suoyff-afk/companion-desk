@@ -1,4 +1,4 @@
-# Companion Desk v0.5.0-beta
+# Companion Desk v0.5.1-beta
 
 Local-first Windows 10/11 x64 public-beta candidate.
 
@@ -30,15 +30,19 @@ and does not connect to Firebase.
 - Rust tests: `<result or NOT RUN>`
 - Asset redistribution gate: `<result or NOT RUN>`
 - EXE/MSI SHA-256 verification: `<result or NOT RUN>`
-- Windows 10 clean install: `<result or NOT RUN>`
-- Windows 11 clean install: `<result or NOT RUN>`
-- Upgrade and uninstall: `<result or NOT RUN>`
+- Current Windows machine NSIS EXE core acceptance: `<result or NOT RUN>`
+- MSI build, SHA-256, Authenticode signature status, and static package
+  inspection: `<result or NOT RUN>`; do not install the MSI for this beta.
 
 ## Known limitations
 
 Copy the current shipped-scope limitations from
 `docs/KNOWN-LIMITATIONS.md`. Do not publish until all blocking items in
 `docs/GITHUB-RELEASE-CHECKLIST.md` have evidence.
+
+The second Windows version, clean machine, and upgrade checks are known
+limitations, not beta blockers. A stable release requires the full Windows
+10/11 x64 clean-machine and installer matrix.
 
 Companion Desk is an independent community project and is not affiliated with
 or endorsed by OpenAI.

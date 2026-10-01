@@ -17,7 +17,7 @@ body:
       placeholder: "Describe the behavior you would like."
   - type: markdown
     attributes:
-      value: "Companion Desk is local-first. Friend networking and chat are outside the v0.5.0-beta scope."
+      value: "Companion Desk is local-first. Friend networking and chat are outside the v0.5.1-beta scope."
   - type: dropdown
     id: platform
     attributes:

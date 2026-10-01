@@ -52,68 +52,68 @@ afterEach(() => {
 });
 
 describe("release tag validator", () => {
-  it.each(["v0.5.0-beta", "v0.5.0-beta.2"])(
-    "accepts %s when all manifests are version 0.5.0",
+  it.each(["v0.5.1-beta", "v0.5.1-beta.2"])(
+    "accepts %s when all manifests are version 0.5.1",
     (tag) => {
       const root = createFixture({
-        package: "0.5.0",
-        tauri: "0.5.0",
-        cargo: "0.5.0",
+        package: "0.5.1",
+        tauri: "0.5.1",
+        cargo: "0.5.1",
       });
 
       const result = runValidator(root, tag);
 
       expect(result.status).toBe(0);
-      expect(result.stdout).toMatch(/validated .*0\.5\.0/);
+      expect(result.stdout).toMatch(/validated .*0\.5\.1/);
       expect(result.stderr).toBe("");
     },
   );
 
   it("rejects a tag whose core version differs from the manifests", () => {
     const root = createFixture({
-      package: "0.5.0",
-      tauri: "0.5.0",
-      cargo: "0.5.0",
+      package: "0.5.1",
+      tauri: "0.5.1",
+      cargo: "0.5.1",
     });
 
-    const result = runValidator(root, "v0.5.1-beta");
+    const result = runValidator(root, "v0.5.2-beta");
 
     expect(result.status).toBe(1);
     expect(result.stderr).toMatch(
-      /tag must be v0\.5\.0-beta or v0\.5\.0-beta\.N/,
+      /tag must be v0\.5\.1-beta or v0\.5\.1-beta\.N/,
     );
   });
 
   it("rejects inconsistent package, Tauri, and Cargo versions", () => {
     const root = createFixture({
-      package: "0.5.0",
-      tauri: "0.5.1",
-      cargo: "0.5.0",
+      package: "0.5.1",
+      tauri: "0.5.2",
+      cargo: "0.5.1",
     });
 
-    const result = runValidator(root, "v0.5.0-beta");
+    const result = runValidator(root, "v0.5.1-beta");
 
     expect(result.status).toBe(1);
     expect(result.stderr).toMatch(/manifest versions do not match/i);
-    expect(result.stderr).toMatch(/package\.json=0\.5\.0/);
-    expect(result.stderr).toMatch(/tauri\.conf\.json=0\.5\.1/);
-    expect(result.stderr).toMatch(/Cargo\.toml=0\.5\.0/);
+    expect(result.stderr).toMatch(/package\.json=0\.5\.1/);
+    expect(result.stderr).toMatch(/tauri\.conf\.json=0\.5\.2/);
+    expect(result.stderr).toMatch(/Cargo\.toml=0\.5\.1/);
   });
 
-  it.each(["v00.5.0-beta", "v0.5.0-beta.01"])(
+  it.each(["v00.5.1-beta", "v0.5.1-beta.01"])(
     "rejects leading zero tag %s",
     (tag) => {
       const root = createFixture({
-        package: "0.5.0",
-        tauri: "0.5.0",
-        cargo: "0.5.0",
+        package: "0.5.1",
+        tauri: "0.5.1",
+        cargo: "0.5.1",
       });
 
       const result = runValidator(root, tag);
 
       expect(result.status).toBe(1);
       expect(result.stderr).toMatch(
-        /tag must be v0\.5\.0-beta or v0\.5\.0-beta\.N/,
+        /tag must be v0\.5\.1-beta or v0\.5\.1-beta\.N/,
       );
     },
   );

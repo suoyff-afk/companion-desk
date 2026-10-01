@@ -20,7 +20,7 @@ body:
     id: version
     attributes:
       label: Companion Desk version
-      placeholder: "Example: v0.5.0-beta"
+      placeholder: "Example: v0.5.1-beta"
     validations:
       required: true
   - type: textarea
