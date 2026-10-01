@@ -87,8 +87,15 @@ success fixture exceeded its two-second process budget. Its test-only budget
 is now ten seconds to allow cold Windows PowerShell startup. A held-stdin
 negative control still timed out and failed; that temporary mutation was
 removed, and the corrected local Rust suite passed 56/56. Production query
-deadlines and cleanup logic are unchanged. The corrected commit needs its own
-CI evidence; the initial failed run is not a passing rerun.
+deadlines and cleanup logic are unchanged.
+
+The [correction CI run](https://github.com/suoyff-afk/companion-desk/actions/runs/36861408899)
+for code commit `31c87f3` passed both jobs on **2026-10-01**: 475 frontend tests,
+20 Firebase rules tests, 56 Windows Rust tests, and the normal Tauri release
+build. It generated and uploaded unsigned NSIS EXE and MSI CI artifacts. This
+is automated test/build evidence; no new GitHub Release, installation, signing,
+or real-cluster acceptance is claimed. Later documentation-only commits do
+not change the code covered by this run; inspect their own CI status separately.
 
 Historical **2026-09-30** native acceptance exercised home → HPC and refreshed
 a real Slurm queue/history through Tauri, observing 48 scheduler-successful
