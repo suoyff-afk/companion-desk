@@ -163,7 +163,7 @@ describe("useFriends", () => {
 
     const restartFailure = createPort();
     vi.mocked(restartFailure.port.start)
-      .mockImplementationOnce(async () => vi.fn())
+      .mockImplementationOnce(async () => vi.fn<() => void>())
       .mockRejectedValueOnce(new Error("restart offline"));
     const second = renderHook(() => useFriends(restartFailure.port));
     await act(async () => undefined);

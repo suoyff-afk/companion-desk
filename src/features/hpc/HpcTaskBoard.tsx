@@ -20,9 +20,9 @@ export function HpcTaskBoard({ hostAlias, hostValid, bridge = desktopHpcQueryBri
       preservedOversizedRecords.current = Array.isArray(value) ? value.filter(item => hasOversizedProjects([item])) : [];
       setProjects(validateProjects(value));
       if (preservedOversizedRecords.current.length > 0) setNotice(oversizedNotice);
+      setLoaded(true);
     })
-      .catch(() => { if (active) setNotice("项目未能载入，可继续读取任务。"); })
-      .finally(() => { if (active) setLoaded(true); });
+      .catch(() => { if (active) setNotice("项目未能载入，暂不能保存；可继续读取任务，重新启动应用后重试。"); });
     return () => { active = false; };
   }, []);
   const hostProjects = projects.filter(project => project.hostAlias === hostAlias);

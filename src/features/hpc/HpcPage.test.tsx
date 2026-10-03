@@ -134,6 +134,19 @@ describe("HpcPage", () => {
     await waitFor(() => expect(screen.getByLabelText("SSH host alias")).toHaveValue("saved-cluster"));
   });
 
+  it.each(["new-cluster", ""])("keeps a user's host edit %j when saved-host loading finishes", async (value) => {
+    window.localStorage.setItem("kunkun-desk.hpc", JSON.stringify({ hostAlias: "saved-cluster" }));
+    const { bridge } = bridgeHarness();
+    const terminal = terminalHarness();
+    render(<HpcPage terminalBridge={bridge} terminalFactory={terminal.factory} />);
+
+    enterHostAlias("new-cluster");
+    if (!value) enterHostAlias("");
+    await act(async () => {});
+
+    expect(screen.getByLabelText("SSH host alias")).toHaveValue(value);
+  });
+
   it("keeps SSH controls available after saved-host loading fails and saves on a later connection", async () => {
     vi.spyOn(Storage.prototype, "getItem")
       .mockImplementation((key) => {
@@ -267,6 +280,29 @@ describe("HpcPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Disconnect$/i }));
     await waitFor(() => expect(harness.bridge.close).toHaveBeenCalledWith("session-1"));
     expect(await screen.findByText(/^Disconnected$/i)).toBeInTheDocument();
+  });
+
+  it("waits for a pending disconnect before allowing another connection", async () => {
+    const harness = bridgeHarness();
+    const closing = deferred<void>();
+    harness.bridge.close.mockImplementationOnce(() => closing.promise);
+    const terminal = terminalHarness();
+    render(<HpcPage terminalBridge={harness.bridge} terminalFactory={terminal.factory} />);
+    enterHostAlias();
+    fireEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
+    await screen.findByText(/^Started$/i);
+
+    fireEvent.click(screen.getByRole("button", { name: /^Disconnect$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Disconnect$/i }));
+
+    expect(screen.queryByRole("button", { name: /^Connect$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Disconnect$/i })).toBeDisabled();
+    expect(harness.bridge.close).toHaveBeenCalledOnce();
+    await act(async () => closing.resolve());
+    fireEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
+
+    expect(await screen.findByText(/^Started$/i)).toBeInTheDocument();
+    expect(harness.bridge.start).toHaveBeenCalledTimes(2);
   });
 
   it("forwards xterm input and resize events and clears the visible terminal", async () => {

@@ -9,11 +9,4 @@ describe("keep-alive feature layout", () => {
     expect(declaration).toMatch(/(?:^|;)\s*height:\s*100%\s*(?:;|$)/);
     expect(declaration).toMatch(/(?:^|;)\s*min-height:\s*0\s*(?:;|$)/);
   });
-
-  it("keeps the collapsed pet inside one 104px sprite-sheet row", () => {
-    const applicationStyles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
-    const declaration = applicationStyles.match(/\.pet-dock--collapsed \.pet-dock__sprite\s*\{([^}]*)\}/)?.[1] ?? "";
-
-    expect(declaration).toMatch(/(?:^|;)\s*height:\s*104px\s*(?:;|$)/);
-  });
 });

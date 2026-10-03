@@ -33,5 +33,3 @@ export function GameCenterPage({ onNavigate }: GameCenterPageProps) {
     </section>
   );
 }
-
-export const RechargePage = GameCenterPage;

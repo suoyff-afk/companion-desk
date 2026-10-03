@@ -220,11 +220,14 @@ export function TerminalPanel({ hostAlias, hostValid, bridge, terminalFactory, o
   };
 
   const disconnect = async () => {
+    if (cleanupPending) return;
+    setCleanupPending(true);
     attemptRef.current += 1;
     const sessionId = sessionRef.current;
     sessionRef.current = null;
     if (sessionId) await bridge.close(sessionId).catch(() => undefined);
     if (mountedRef.current) {
+      setCleanupPending(false);
       setStatus("Disconnected");
       setDetail("Session closed. Terminal output was not saved.");
     }
@@ -238,7 +241,7 @@ export function TerminalPanel({ hostAlias, hostValid, bridge, terminalFactory, o
         <div className="ssh-connection-actions">
           <button type="button" onClick={() => terminalRef.current?.clear()}><Broom />Clear</button>
           {connected ? (
-            <button type="button" className="terminal-action terminal-action--disconnect" onClick={() => void disconnect()}><XCircle />Disconnect</button>
+            <button type="button" className="terminal-action terminal-action--disconnect" disabled={cleanupPending} onClick={() => void disconnect()}><XCircle />Disconnect</button>
           ) : (
             <button type="button" className="terminal-action" onClick={() => void connect()} disabled={cleanupPending || !terminalReady || !hostValid || status === "Connecting"}>
               {status === "Exited" || status === "Error" ? <ArrowClockwise /> : <Plugs />}

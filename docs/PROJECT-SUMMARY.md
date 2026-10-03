@@ -1,6 +1,6 @@
 # Companion Desk — current project handoff
 
-**Status reviewed: 2026-10-01.** Companion Desk is a local-first Tauri 2
+**Status reviewed: 2026-10-03.** Companion Desk is a local-first Tauri 2
 desktop companion for Windows 10/11 x64. Companion Desk is the product name;
 Kunkun is the pet's name. The source manifests report version `0.5.1`; the
 release-process documents reference `v0.5.1-beta`; this source handoff creates
@@ -59,7 +59,48 @@ and is not affiliated with or endorsed by OpenAI.
 
 ## Validation evidence and limits
 
-Fresh local verification on **2026-10-01**:
+Local review on **2026-10-03**, based on `main` at `6a6ce1f`, on branch
+`codex/review-cleanup`:
+
+- Fixed HPC project-read failure enabling destructive saves, delayed host
+  hydration overwriting user input, and overlapping terminal disconnects.
+- Fixed stale pet position results overwriting newer preferences and serialized
+  preference writes. Navigation now has one feature list; repeated notification
+  cleanup shares one implementation.
+- Fixed nested JWT account-claim lookup and kept the first rollout's source
+  attribution when later metadata is copied from a parent session.
+- Removed unreferenced Sidebar/PetDock components, their obsolete tests/styles,
+  unused bridge wrappers and aliases, and a constant-only navigation test.
+- Upgraded Vitest to `4.1.11`; Node 22 `npm ci` succeeded and `npm audit`
+  reported zero findings at every severity.
+- Frontend: **48 files / 474 tests passed**. Seven new asynchronous regressions
+  passed; eight obsolete legacy/constant assertions were removed. TypeScript/Vite
+  build, asset inventory schema validation, and seven browser smoke flows passed.
+- Firebase emulators: **20 rules tests passed**. This does not cover the complete
+  friend adapter startup against the rules; the public friend entry stays disabled.
+- Rust: **20 parser/model/root tests passed**, including five new regressions,
+  in an external harness importing the actual source modules. A minimal Tauri
+  shim bypassed command generation and runtime integration; this is not a native
+  desktop build. Restoring the old logic outside the checkout caused the three
+  targeted regressions to fail. Production Cargo manifests/lock are unchanged.
+
+Remaining findings from this review:
+
+- **P2 — Token history:** copied parent counters in forked rollouts can still
+  inflate totals and daily trends. Source attribution is repaired; accounting
+  needs explicit ownership boundaries and fixtures for modern and legacy formats.
+- **P2 — Windows tray:** Pin and Switch Language still update legacy preferences
+  without consumers in the current UI. Remove or reconnect these actions and
+  verify the result on Windows.
+- **P2 — deferred friends:** occupied friend codes trigger a transaction write
+  that the strict rules reject, blocking reuse/collision retry. Abort occupied
+  transactions and add adapter-plus-emulator regressions before enabling friends.
+
+These local changes have no new Windows CI, installer, native interaction, or
+real-cluster acceptance result. Existing CI evidence below belongs to earlier
+commits. Check the final candidate's reachable history before publishing.
+
+Historical local verification on **2026-10-01**:
 
 - `npm ci` succeeded from the updated lock file.
 - `npm test -- --maxWorkers=2`: 50 files / 475 tests passed.
@@ -142,9 +183,7 @@ excluded from the source tree.
 
 ## Minimal next step
 
-Have the cloud agent select this repository's `main`, read `AGENTS.md` and
-this handoff, and inspect the current CI results. Use Linux for frontend work
-and the existing Windows CI for desktop builds. Native interaction and real
-SSH acceptance remain on the user's Windows machine. Confirm the next actual
-HPC workflow with the user before adding features; keep changes isolated from
-the installed production application until authorized.
+Review the local cleanup diff and run the existing Windows test/build jobs for
+the actual candidate. Address the remaining Token accounting and tray findings;
+keep friends disabled until its startup/rules integration is verified. Native
+interaction and real SSH acceptance remain on the user's Windows machine.

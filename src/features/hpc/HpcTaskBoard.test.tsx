@@ -213,6 +213,25 @@ describe("HPC task board", () => {
     expect(await screen.findByText(/项目未能载入/)).toBeInTheDocument();
     refresh(); expect(await screen.findByText("job-123_1")).toBeInTheDocument();
   });
+  it("prevents saving over unread project registrations after a storage read failure", async () => {
+    const original = [{ id: "p", name: "已有项目", hostAlias: "cluster", jobIds: ["123_1"] }];
+    seedProjects(original);
+    vi.spyOn(Storage.prototype, "getItem").mockImplementationOnce(() => { throw new Error("unavailable"); });
+    const query = vi.fn(async () => snapshot([job("456_1")]));
+    render(<HpcTaskBoard hostAlias="cluster" hostValid bridge={{ query }} />);
+    await screen.findByText(/项目未能载入/);
+    refresh(); await screen.findByText("job-456_1");
+    openManagement();
+    fireEvent.click(await screen.findByRole("checkbox", { name: "选择任务 456_1" }));
+    fireEvent.change(screen.getByLabelText("项目名称"), { target: { value: "新项目" } });
+
+    expect(screen.getByRole("button", { name: "保存所选任务" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "保存所选任务" }));
+    await act(async () => {});
+
+    expect(JSON.parse(window.localStorage.getItem("kunkun-desk.hpc-projects")!)).toEqual(original);
+    expect(screen.getByRole("button", { name: "刷新" })).toBeEnabled();
+  });
   it("marks unsupported compressed arrays as incomplete rather than counting an aggregate job", async () => {
     const query = vi.fn(async () => snapshot([job("123"), job("123_[2-8]")]));
     render(<HpcTaskBoard hostAlias="cluster" hostValid bridge={{ query }} />);

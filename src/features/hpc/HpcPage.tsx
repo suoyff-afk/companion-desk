@@ -1,5 +1,5 @@
 import { TerminalWindow } from "@phosphor-icons/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { readAppValue, writeAppValue } from "../../lib/persistence";
 import { validateHostAlias } from "./hostValidation";
 import { createXtermTerminal, TerminalPanel, type TerminalFactory } from "./TerminalPanel";
@@ -15,6 +15,7 @@ interface HpcPageProps {
 
 export function HpcPage({ terminalBridge = desktopTerminalBridge, terminalFactory = createXtermTerminal, queryBridge }: HpcPageProps) {
   const [hostAlias, setHostAlias] = useState("");
+  const hostEdited = useRef(false);
   const [persistenceNotice, setPersistenceNotice] = useState<string | null>(null);
   const validation = useMemo(() => validateHostAlias(hostAlias), [hostAlias]);
   const hostAliasEmpty = hostAlias.trim().length === 0;
@@ -22,7 +23,7 @@ export function HpcPage({ terminalBridge = desktopTerminalBridge, terminalFactor
   useEffect(() => {
     let active = true;
     void readAppValue<{ hostAlias?: string }>("hpc", {}).then((value) => {
-      if (active && typeof value.hostAlias === "string" && validateHostAlias(value.hostAlias).ok) setHostAlias(value.hostAlias);
+      if (active && !hostEdited.current && typeof value.hostAlias === "string" && validateHostAlias(value.hostAlias).ok) setHostAlias(value.hostAlias);
     }).catch(() => {
       if (active) setPersistenceNotice("Saved SSH host could not be loaded. Enter it again to continue.");
     });
@@ -54,7 +55,10 @@ export function HpcPage({ terminalBridge = desktopTerminalBridge, terminalFactor
                     id="ssh-host"
                     aria-label="SSH host alias"
                     value={hostAlias}
-                    onChange={(event) => setHostAlias(event.target.value)}
+                    onChange={(event) => {
+                      hostEdited.current = true;
+                      setHostAlias(event.target.value);
+                    }}
                     aria-invalid={!hostAliasEmpty && !validation.ok}
                     spellCheck={false}
                     autoComplete="off"

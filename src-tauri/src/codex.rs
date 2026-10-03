@@ -30,14 +30,19 @@ fn account_id_from_jwt(token: &str) -> Option<String> {
     let payload = token.split('.').nth(1)?;
     let bytes = URL_SAFE_NO_PAD.decode(payload).ok()?;
     let value: Value = serde_json::from_slice(&bytes).ok()?;
-    pick_string(
-        &value,
-        &[
-            "https://api.openai.com/auth.chatgpt_account_id",
-            "chatgpt_account_id",
-        ],
-    )
-    .map(str::to_owned)
+    value
+        .get("https://api.openai.com/auth")
+        .and_then(|claims| pick_string(claims, &["chatgpt_account_id"]))
+        .or_else(|| {
+            pick_string(
+                &value,
+                &[
+                    "https://api.openai.com/auth.chatgpt_account_id",
+                    "chatgpt_account_id",
+                ],
+            )
+        })
+        .map(str::to_owned)
 }
 
 fn load_auth() -> Result<Auth, &'static str> {
@@ -440,6 +445,68 @@ pub async fn fetch_snapshot(client: &reqwest::Client) -> ProviderSnapshot {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn synthetic_jwt(payload: Value) -> String {
+        format!("e30.{}.signature", URL_SAFE_NO_PAD.encode(payload.to_string()))
+    }
+
+    #[test]
+    fn nested_jwt_account_claim_sets_the_account_header() {
+        for payload in [
+            serde_json::json!({
+                "https://api.openai.com/auth": { "chatgpt_account_id": "synthetic-account" }
+            }),
+            serde_json::json!({
+                "https://api.openai.com/auth": { "chatgpt_account_id": "synthetic-account" },
+                "chatgpt_account_id": "legacy-account"
+            }),
+        ] {
+            let access_token = synthetic_jwt(payload);
+            let account_id = account_id_from_jwt(&access_token);
+            assert_eq!(account_id.as_deref(), Some("synthetic-account"));
+
+            let auth = Auth {
+                access_token,
+                account_id,
+            };
+            assert_eq!(
+                headers(&auth).unwrap()["ChatGPT-Account-Id"],
+                "synthetic-account"
+            );
+        }
+    }
+
+    #[test]
+    fn jwt_account_fallback_preserves_flat_claim_aliases() {
+        for key in [
+            "https://api.openai.com/auth.chatgpt_account_id",
+            "chatgpt_account_id",
+        ] {
+            let token = synthetic_jwt(serde_json::json!({ key: "legacy-account" }));
+            assert_eq!(account_id_from_jwt(&token).as_deref(), Some("legacy-account"));
+        }
+    }
+
+    #[test]
+    fn invalid_or_missing_jwt_account_claims_do_not_create_an_account_header() {
+        for payload in [
+            serde_json::json!({}),
+            serde_json::json!({ "https://api.openai.com/auth": "invalid" }),
+            serde_json::json!({ "https://api.openai.com/auth": { "chatgpt_account_id": 42 } }),
+        ] {
+            let access_token = synthetic_jwt(payload);
+            let account_id = account_id_from_jwt(&access_token);
+            assert!(account_id.is_none());
+            assert!(!headers(&Auth {
+                access_token,
+                account_id,
+            })
+            .unwrap()
+            .contains_key("ChatGPT-Account-Id"));
+        }
+        assert!(account_id_from_jwt("not-a-jwt").is_none());
+        assert!(account_id_from_jwt("e30.!.signature").is_none());
+    }
 
     #[test]
     fn parses_both_window_shapes() {

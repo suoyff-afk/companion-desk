@@ -56,16 +56,6 @@
 .window-chrome__controls .window-chrome__close:hover { color: #fff; background: #e65d6c; }
 .window-chrome svg { width: 15px; height: 15px; }
 
-.pet-dock { min-width: 0; display: grid; place-content: center; justify-items: center; gap: 0; padding: 0; overflow: visible; border: 0; color: #8279bd; text-align: center; background: transparent; cursor: default; }
-.pet-dock:is(button) { cursor: pointer; }
-.pet-dock:is(button):focus-visible { outline: 2px solid #786cf0; outline-offset: 4px; border-radius: 24px; }
-.pet-dock__sprite { width: 96px; height: 104px; flex: 0 0 auto; background-repeat: no-repeat; background-position: 0 0; background-size: 768px 1144px; animation: pet-idle 2.8s steps(7, end) infinite; filter: drop-shadow(0 9px 10px rgba(56, 42, 95, .12)); }
-.pet-dock__copy { display: grid; gap: 2px; margin-top: -7px; }
-.pet-dock__copy strong { color: #6253dd; font-size: 14px; }
-.pet-dock__copy small { font-size: 10px; opacity: .72; }
-.pet-dock--collapsed { position: relative; z-index: 2; width: 150px; height: 190px; }
-.pet-dock--collapsed .pet-dock__sprite { height: 104px; transform: scale(1.15); transform-origin: 50% 72%; }
-@keyframes pet-idle { to { background-position-x: -672px; } }
 .app-main { position: relative; min-width: 0; min-height: 0; overflow-x: hidden; overflow-y: auto; border: 1px solid rgba(255, 255, 255, .7); border-radius: 22px; background: rgba(248, 250, 255, .46); box-shadow: inset 0 1px 0 rgba(255,255,255,.72), inset 0 0 0 1px rgba(112,126,178,.05); backdrop-filter: blur(20px) saturate(126%); -webkit-backdrop-filter: blur(20px) saturate(126%); }
 .app-shell[data-view="home"] {
   border: 0;
@@ -646,7 +636,7 @@ button { font: inherit; }
 @keyframes pulse { 50% { opacity: .28; transform: translateY(-4px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .aurora, .loading-card span, .usage-indicator--active i, .tile-2048--new, .pet-dock__sprite, .collapsed-companion__orbit, .pet-sprite { animation: none; }
+  .aurora, .loading-card span, .usage-indicator--active i, .tile-2048--new, .collapsed-companion__orbit, .pet-sprite { animation: none; }
   .progress span, .game-surface__header button, .controls-2048 button, .window-chrome button, .home-action, .home-more__toggle svg, .home-quota__refresh, .home-quota__refresh svg { transition: none; animation: none; }
 }
 

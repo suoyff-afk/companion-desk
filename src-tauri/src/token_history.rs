@@ -222,13 +222,19 @@ where
 {
     let mut aggregate = SessionAggregate::default();
     let mut previous_usage = None;
+    let mut source_seen = false;
 
     for line in BufReader::new(reader).lines().map_while(Result::ok) {
         let Ok(event) = serde_json::from_str::<HistoryEvent>(&line) else {
             continue;
         };
         if event.event_type.as_deref() == Some("session_meta") {
-            aggregate.source = classify_source(event.payload.source.as_ref());
+            // The first metadata record belongs to this rollout; later records
+            // can be copied from a parent when Codex forks the session.
+            if !source_seen {
+                aggregate.source = classify_source(event.payload.source.as_ref());
+                source_seen = true;
+            }
             continue;
         }
         if event.payload.payload_type.as_deref() != Some("token_count") {
@@ -525,6 +531,41 @@ mod tests {
         .to_string()];
         lines.extend(events.iter().map(Value::to_string));
         fs::write(path, format!("{}\n", lines.join("\n"))).unwrap();
+    }
+
+    #[test]
+    fn copied_parent_metadata_does_not_replace_the_rollout_source() {
+        for source in [
+            json!("subagent"),
+            json!({ "subagent": { "other": "test" } }),
+        ] {
+            let input = [
+                json!({ "type": "session_meta", "payload": { "source": source } }),
+                json!({ "type": "session_meta", "payload": { "source": "vscode" } }),
+                usage_event("2026-07-15T12:00:00Z", 20, 16, 6, 4, 1),
+            ]
+            .into_iter()
+            .map(|event| event.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+            let aggregate = aggregate_reader(input.as_bytes());
+            assert!(aggregate.source == SessionSource::Subagent);
+        }
+    }
+
+    #[test]
+    fn missing_own_source_is_not_replaced_by_copied_parent_metadata() {
+        let input = [
+            json!({ "type": "session_meta", "payload": {} }),
+            json!({ "type": "session_meta", "payload": { "source": "vscode" } }),
+        ]
+        .into_iter()
+        .map(|event| event.to_string())
+        .collect::<Vec<_>>()
+        .join("\n");
+
+        assert!(aggregate_reader(input.as_bytes()).source == SessionSource::Other);
     }
 
     #[test]

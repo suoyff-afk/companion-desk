@@ -749,6 +749,72 @@ describe("App companion views", () => {
     expect(container.querySelector(".collapsed-companion")).toHaveAttribute("data-dock-side", "right");
   });
 
+  it("preserves newer size preferences when a pending center operation finishes", async () => {
+    const storageAdapter = createMemoryAdapter();
+    const centering = deferred<void>();
+    const windowPort = createWindowPort({ center: vi.fn(() => centering.promise) });
+    render(<ProductionApp windowPort={windowPort} storageAdapter={storageAdapter} loadQuota={quotaLoader()} />);
+    const pet = await screen.findByRole("button", { name: "展开 Companion Desk" });
+    await waitFor(() => expect(windowPort.setSize).toHaveBeenCalledWith({ width: 160, height: 150 }));
+
+    fireEvent.contextMenu(pet);
+    fireEvent.click(screen.getByRole("menuitem", { name: "移到屏幕中央" }));
+    fireEvent.contextMenu(pet);
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "大" }));
+    await act(async () => centering.resolve());
+
+    await waitFor(() => expect(storageAdapter.get("petPreferencesV1")).resolves.toEqual({
+      size: "large", dockSide: null, reactionsEnabled: true,
+    }));
+  });
+
+  it("does not restore an old drag result after resetting pet preferences", async () => {
+    const storageAdapter = createMemoryAdapter();
+    const dragging = deferred<"right">();
+    const windowPort = createWindowPort({ dragAndDock: vi.fn(() => dragging.promise) });
+    const { container } = render(<ProductionApp windowPort={windowPort} storageAdapter={storageAdapter} loadQuota={quotaLoader()} />);
+    const pet = await screen.findByRole("button", { name: "展开 Companion Desk" });
+    await waitFor(() => expect(windowPort.setSize).toHaveBeenCalledWith({ width: 160, height: 150 }));
+    const pointerDown = new MouseEvent("pointerdown", { button: 0, bubbles: true });
+    fireEvent(pet, pointerDown);
+    expect(windowPort.dragAndDock).toHaveBeenCalledOnce();
+
+    fireEvent.contextMenu(pet);
+    fireEvent.click(screen.getByRole("menuitem", { name: "恢复默认" }));
+    await act(async () => dragging.resolve("right"));
+
+    expect(container.querySelector(".collapsed-companion")).not.toHaveAttribute("data-dock-side", "right");
+    await expect(storageAdapter.get("petPreferencesV1")).resolves.toEqual({
+      size: "standard", dockSide: null, reactionsEnabled: true,
+    });
+  });
+
+  it("saves successive pet preferences in order when storage is slow", async () => {
+    const storageAdapter = createMemoryAdapter();
+    const firstSave = deferred<void>();
+    const save = storageAdapter.set.bind(storageAdapter);
+    const set = vi.spyOn(storageAdapter, "set").mockImplementationOnce(async (key, value) => {
+      await firstSave.promise;
+      await save(key, value);
+    });
+    const windowPort = createWindowPort();
+    render(<ProductionApp windowPort={windowPort} storageAdapter={storageAdapter} loadQuota={quotaLoader()} />);
+    const pet = await screen.findByRole("button", { name: "展开 Companion Desk" });
+    await waitFor(() => expect(windowPort.setSize).toHaveBeenCalledWith({ width: 160, height: 150 }));
+
+    fireEvent.contextMenu(pet);
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "小" }));
+    await waitFor(() => expect(set).toHaveBeenCalledTimes(1));
+    fireEvent.contextMenu(pet);
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "大" }));
+    await act(async () => firstSave.resolve());
+
+    await waitFor(() => expect(set).toHaveBeenCalledTimes(2));
+    await expect(storageAdapter.get("petPreferencesV1")).resolves.toEqual({
+      size: "large", dockSide: null, reactionsEnabled: true,
+    });
+  });
+
   it("temporarily grows Home while More is open and restores the compact layout", async () => {
     const windowPort = createWindowPort();
     render(

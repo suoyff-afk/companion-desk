@@ -10,7 +10,7 @@ import {
   type ComponentType,
   type ReactNode,
 } from "react";
-import type { AppView, FeatureView } from "./app/navigation";
+import { FEATURE_VIEWS, type AppView, type FeatureView } from "./app/navigation";
 import { applyWindowLayout, type WindowLogger, type WindowSize } from "./app/windowController";
 import {
   DEFAULT_WINDOW_LAYOUTS,
@@ -50,7 +50,6 @@ import { createQuotaController, type QuotaState } from "./features/quota/quotaCo
 import { getTokenHistory, type TokenHistorySnapshot } from "./features/token/tokenHistory";
 import type { ProviderSnapshot } from "./types";
 
-const FEATURE_VIEWS: readonly FeatureView[] = ["token", "focus", "games", "game2048", "gomoku", "hpc"];
 type TokenFeatureProps = {
   quota: Readonly<QuotaState>;
   refreshQuota: () => Promise<Readonly<QuotaState>>;
@@ -66,12 +65,7 @@ type FeaturePropsByView = {
 };
 type FeatureComponents = { [View in FeatureView]: ComponentType<FeaturePropsByView[View]> };
 type FeatureLoaders = {
-  token: () => Promise<{ default: ComponentType<TokenFeatureProps> }>;
-  focus: () => Promise<{ default: ComponentType<FeaturePropsByView["focus"]> }>;
-  games: () => Promise<{ default: ComponentType<FeaturePropsByView["games"]> }>;
-  game2048: () => Promise<{ default: ComponentType<FeaturePropsByView["game2048"]> }>;
-  gomoku: () => Promise<{ default: ComponentType<FeaturePropsByView["gomoku"]> }>;
-  hpc: () => Promise<{ default: ComponentType<FeaturePropsByView["hpc"]> }>;
+  [View in FeatureView]: () => Promise<{ default: ComponentType<FeaturePropsByView[View]> }>;
 };
 
 const DEFAULT_FEATURE_LOADERS: FeatureLoaders = {
@@ -156,11 +150,6 @@ interface ActivePoke {
   key: string;
   sender: string;
   reaction: Exclude<PetReaction, "idle">;
-}
-
-interface ProcessedPoke {
-  createdAt: number;
-  eventId: string;
 }
 
 function createDefaultFriendPort(): FriendPort {
@@ -291,6 +280,8 @@ export default function App({
   const [focusSummary, setFocusSummary] = useState<FocusSummary | null>(null);
   const [homeMoreOpen, setHomeMoreOpen] = useState(false);
   const [petPreferences, setPetPreferences] = useState<PetPreferences>(DEFAULT_PET_PREFERENCES);
+  const petPreferencesRef = useRef(petPreferences);
+  const petPositionGenerationRef = useRef(0);
   const [petPreferencesLoaded, setPetPreferencesLoaded] = useState(false);
   const [idleReaction, setIdleReaction] = useState<PetReaction>("idle");
   const [layoutsLoaded, setLayoutsLoaded] = useState(false);
@@ -299,7 +290,7 @@ export default function App({
   const layoutGenerationRef = useRef(0);
   const layoutQueueRef = useRef<Promise<void>>(Promise.resolve());
   const writeQueueRef = useRef<Promise<void>>(Promise.resolve());
-  const processedPokesRef = useRef(new Map<string, ProcessedPoke>());
+  const processedPokesRef = useRef(new Map<string, number>());
   const pendingPokesRef = useRef<ActivePoke[]>([]);
   const activePokeRef = useRef<ActivePoke | null>(null);
   const pokeTimerRef = useRef<unknown | null>(null);
@@ -324,17 +315,21 @@ export default function App({
     setView("collapsed");
   }, []);
 
-  const collapseToPet = useCallback(() => {
+  const clearPokes = useCallback(() => {
     if (pokeTimerRef.current !== null) cancelNotification(pokeTimerRef.current);
     pokeTimerRef.current = null;
     pendingPokesRef.current = [];
     activePokeRef.current = null;
     setActivePoke(null);
-    setCompanionMenuOpen(false);
     setNotificationLayoutReady(false);
+  }, [cancelNotification]);
+
+  const collapseToPet = useCallback(() => {
+    clearPokes();
+    setCompanionMenuOpen(false);
     setHomeMoreOpen(false);
     setView("collapsed");
-  }, [cancelNotification]);
+  }, [clearPokes]);
 
   useEffect(() => {
     if (
@@ -375,26 +370,18 @@ export default function App({
 
   useEffect(() => {
     if (friendsEnabled) return;
-    if (pokeTimerRef.current !== null) cancelNotification(pokeTimerRef.current);
-    pokeTimerRef.current = null;
-    pendingPokesRef.current = [];
-    activePokeRef.current = null;
-    setNotificationLayoutReady(false);
-    setActivePoke(null);
+    clearPokes();
     setIdleReaction("idle");
-  }, [cancelNotification, friendsEnabled]);
+  }, [clearPokes, friendsEnabled]);
 
   useEffect(() => {
     if (!friendsEnabled) return;
     const poke = friends.snapshot.incomingPoke;
     if (poke === null) return;
     const processed = processedPokesRef.current.get(poke.senderUid);
-    if (processed !== undefined && poke.createdAt <= processed.createdAt) return;
+    if (processed !== undefined && poke.createdAt <= processed) return;
     const key = `${poke.senderUid}:${poke.eventId}`;
-    processedPokesRef.current.set(poke.senderUid, {
-      createdAt: poke.createdAt,
-      eventId: poke.eventId,
-    });
+    processedPokesRef.current.set(poke.senderUid, poke.createdAt);
     const sender = friends.snapshot.friends.find((friend) => friend.uid === poke.senderUid)?.displayName ?? "好友";
     const randomValue = random();
     const reactionIndex = Number.isFinite(randomValue)
@@ -532,12 +519,14 @@ export default function App({
     void readAppValue<unknown>("petPreferencesV1", DEFAULT_PET_PREFERENCES, storageAdapter)
       .then((stored) => {
         if (!active) return;
-        setPetPreferences(normalizePetPreferences(stored));
+        petPreferencesRef.current = normalizePetPreferences(stored);
+        setPetPreferences(petPreferencesRef.current);
         setPetPreferencesLoaded(true);
       })
       .catch((error) => {
         if (!active) return;
         warnSafely(logger, "[App] failed to read pet preferences", error);
+        petPreferencesRef.current = DEFAULT_PET_PREFERENCES;
         setPetPreferences(DEFAULT_PET_PREFERENCES);
         setPetPreferencesLoaded(true);
       });
@@ -692,46 +681,46 @@ export default function App({
   };
 
   const expand = () => {
-    if (pokeTimerRef.current !== null) cancelNotification(pokeTimerRef.current);
-    pokeTimerRef.current = null;
-    pendingPokesRef.current = [];
-    activePokeRef.current = null;
-    setActivePoke(null);
+    clearPokes();
     setCompanionMenuOpen(false);
-    setNotificationLayoutReady(false);
     setHomeMoreOpen(false);
     setView("home");
   };
 
   const openFromCompanion = (nextView: "focus" | "games") => {
-    if (pokeTimerRef.current !== null) cancelNotification(pokeTimerRef.current);
-    pokeTimerRef.current = null;
-    pendingPokesRef.current = [];
-    activePokeRef.current = null;
-    setActivePoke(null);
+    clearPokes();
     setCompanionMenuOpen(false);
-    setNotificationLayoutReady(false);
     navigate(nextView);
   };
 
-  const savePetPreferences = (next: PetPreferences) => {
+  const savePetPreferences = (changes: Partial<PetPreferences>) => {
+    const next = { ...petPreferencesRef.current, ...changes };
+    petPreferencesRef.current = next;
     setPetPreferences(next);
-    void writeAppValue("petPreferencesV1", next, storageAdapter).catch((error) => {
-      warnSafely(logger, "[App] failed to save pet preferences", error);
-    });
+    writeQueueRef.current = writeQueueRef.current
+      .catch(() => undefined)
+      .then(() => writeAppValue("petPreferencesV1", next, storageAdapter))
+      .catch((error) => {
+        warnSafely(logger, "[App] failed to save pet preferences", error);
+      });
   };
 
   const dragPet = async () => {
+    const generation = ++petPositionGenerationRef.current;
     const dockSide = await desktopWindow.dragAndDock();
-    savePetPreferences({ ...petPreferences, dockSide });
+    if (generation !== petPositionGenerationRef.current) return;
+    savePetPreferences({ dockSide });
   };
 
   const centerPet = async () => {
+    const generation = ++petPositionGenerationRef.current;
     await desktopWindow.center();
-    savePetPreferences({ ...petPreferences, dockSide: null });
+    if (generation !== petPositionGenerationRef.current) return;
+    savePetPreferences({ dockSide: null });
   };
 
   const restorePetDefaults = () => {
+    petPositionGenerationRef.current += 1;
     savePetPreferences(DEFAULT_PET_PREFERENCES);
     void desktopWindow.center().catch(() => undefined);
   };
@@ -776,8 +765,8 @@ export default function App({
           petSize={petPreferences.size}
           dockSide={petPreferences.dockSide}
           reactionsEnabled={petPreferences.reactionsEnabled}
-          onPetSizeChange={(size) => savePetPreferences({ ...petPreferences, size })}
-          onReactionsEnabledChange={(reactionsEnabled) => savePetPreferences({ ...petPreferences, reactionsEnabled })}
+          onPetSizeChange={(size) => savePetPreferences({ size })}
+          onReactionsEnabledChange={(reactionsEnabled) => savePetPreferences({ reactionsEnabled })}
           onCenter={centerPet}
           onRestoreDefault={restorePetDefaults}
           onDragStart={dragPet}
